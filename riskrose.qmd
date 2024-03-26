@@ -5,7 +5,7 @@ editor: visual
 ---
 
 ```{r}
-#| label: loadpackages
+#| label: load-packages
 #| warning: False
 #| message: False
 
@@ -18,66 +18,119 @@ library(plotly)
 ```
 
 ```{r}
-#| label: loaddata
+#| label: load-and-clean-data
 #| warning: False
 #| message: False
 
 # upload the csv file (replace name with specific file path for each airport's table)
 risks = read_csv("~/desktop/Climate Risk Rose for Airports.csv", skip= 3) |>
   
-# create usable variable names   
+# create usable variable names and filter dataset to relevant information    
   rename("level1" = "Level 1...1",
          "level2" = "Level 2...2", 
          "level3" = "Level 3...3",
          "level4" = "Level 4...4",
          "estrisk" = "Estimated Risk Score", 
          "driver" = "Climate Driver") |>
+  select(level1, level2, level3, level4, estrisk, driver) |>
   
-# make each necessary variable a factor (to make the data usable for sorting and color-coding within the risk rose)  
+# standardize N/As in the risk rating 
+  mutate(estrisk = as.numeric(estrisk),
+        estrisk = ifelse(is.na(estrisk), "blank", estrisk),
+        estrisk = ifelse(estrisk == "0", "blank", estrisk)) |>
+  
+# make each necessary variable a factor (to make the data usable for sorting and color-coding within the risk rose) 
   mutate(level1 = as.factor(level1),
          level2 = as.factor(level2),
          level3 = as.factor(level3),
-         driver = as.factor(driver)) |>
-
-# handle blanks, N/As, or errors (turn them into 0s that will be blanks in the risk rose )
-  mutate(estrisk = as.numeric(estrisk),
-         estrisk = ifelse(is.integer(estrisk), estrisk, 0),
-         estrisk = as.factor(estrisk)) |>
-  select(level1, level2, level3, level4, estrisk, driver) |>
-
-# create a path from the root to the leaf for the sunburt plot to read 
-  mutate(id = paste(level1, level2, level3, level4, sep = " - "),
-         parent = paste(level1, level2, level3, sep = " - "),
-         value = 1) # Assign a dummy 'value' of 1 for each leaf so that spacing is equal 
-
+         driver = as.factor(driver))
 ```
 
 ```{r}
-
-
-fig <- plot_ly(risks, ids = ~id, labels = ~level4, parents = ~parent, type = 'sunburst')
-
-fig
-```
-
-```{r}
-#| label: createriskrose 
+#| label: make-data-usable-for-plotly
 #| warning: False
 #| message: False
 
 
+### GUIDE FROM PLOTLY ###
 
-risks |>
-  ggplot() +
-  geom_bar(aes(x = 1, y = 1, fill = estrisk, group = level4), 
-           width = 1, stat = "identity") +
-  #geom_bar(aes(x = 2, y = 1, fill = category, group = category), 
-          # width = 1, stat = "identity") +
-  coord_polar(theta = "y") +
-  scale_fill_brewer(palette = "Set3") +
-  theme_void() +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme(legend.position = "none")
+# ids: These should be unique identifiers for each sector, sub-sector, and individual component of your chart. In the case of a 4-ring chart, each id will correspond to an entry in the fourth ring, with unique concatenations of the previous levels.
 
+# labels: These will be the text labels displayed on the chart for each id.
 
+# parents: This is the id of the immediate parent level. For top-level entries, this will be blank.
+
+# Each parent must be defined before its children. The top-level parent should have no parent id (it can be an empty string)
+
+###
+
+# create and put together plotly table: parent values = risk level1
+data1 = risks |> 
+  mutate(ids = level1,
+         parents = ' ',
+         labels = level1,
+         estrisk = " ") |>
+  select(ids, parents, labels, estrisk) |>
+  distinct()
+  
+# create and put together plotly table: risk level2 with parent values level 1
+data2 = risks |> 
+  mutate(ids = paste(level1, level2, sep = " - "),
+         parents = level1,
+         labels = level2,
+         estrisk = " ") |>
+  select(ids, parents, labels, estrisk)|>
+  distinct()
+
+# create and put together plotly table: risk level3 with parent values level1 - level2
+data3 = risks |> 
+  mutate(ids = paste(level1, level2, level3, sep = " - "),
+         parents = paste(level1, level2, sep = " - "),
+         labels = level3,
+         estrisk = " ")|>
+  select(ids, parents, labels, estrisk)|>
+  distinct()
+
+# create and put together plotly table: risk level4 with parent values level1 - level2 - level3
+data4 = risks |>
+  mutate(
+    ids = paste(level1, level2, level3, level4, sep = " - "),
+    parents = paste(level1, level2, level3, sep = " - "),
+    labels = level4,
+    estrisk = estrisk
+  ) |>
+# create color scale from 0 to 1 (to handle any risk rating scale), while keeping blank values separate 
+  mutate(estrisk_numeric = ifelse(estrisk == "blank", NA_real_, as.numeric(estrisk))) |>
+  mutate(estrisk = ifelse(is.na(estrisk_numeric), "blank", 
+                          (estrisk_numeric - min(estrisk_numeric, na.rm = TRUE)) / 
+                          (max(estrisk_numeric, na.rm = TRUE) - min(estrisk_numeric, na.rm = 
+                                                                      TRUE)))) |>
+  select(ids, parents, labels, estrisk) |> 
+  distinct()
+
+```
+
+```{r}
+#| label: create-plotly-riskrose
+#| warning: False
+#| message: False
+
+plotlyrisks = rbind(data1, data2, data3, data4) 
+
+innercolors = c("Transition Risks and Opportunities" = "lightsteelblue", "Physical Risks" = "steelblue")
+outercolors = c("low" = "lightgreen", "middle" = "yellow", high = "red")
+
+riskrose = plot_ly()
+
+riskrose = riskrose |> add_trace(
+  type='sunburst',
+  ids=plotlyrisks$ids,
+  labels=plotlyrisks$labels,
+  parents=plotlyrisks$parents,
+  domain=list(column=1),
+  maxdepth=5,
+  insidetextorientation='radial'
+)
+
+riskrose
 ```
