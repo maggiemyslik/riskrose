@@ -1,0 +1,85 @@
+---
+title: "risk rose"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: loadpackages
+#| warning: False
+#| message: False
+
+library(tidyverse)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+```
+
+```{r}
+#| label: loaddata
+#| warning: False
+#| message: False
+
+# upload the csv file (replace name with specific file path for each airport's table)
+risks = read_csv("~/desktop/Climate Risk Rose for Airports.csv", skip= 3) |>
+  
+# create usable variable names   
+  rename("level1" = "Level 1...1",
+         "level2" = "Level 2...2", 
+         "level3" = "Level 3...3",
+         "level4" = "Level 4...4",
+         "estrisk" = "Estimated Risk Score", 
+         "driver" = "Climate Driver") |>
+  
+# make each necessary variable a factor (to make the data usable for sorting and color-coding within the risk rose)  
+  mutate(level1 = as.factor(level1),
+         level2 = as.factor(level2),
+         level3 = as.factor(level3),
+         driver = as.factor(driver)) |>
+
+# handle blanks, N/As, or errors (turn them into 0s that will be blanks in the risk rose )
+  mutate(estrisk = as.numeric(estrisk),
+         estrisk = ifelse(is.integer(estrisk), estrisk, 0),
+         estrisk = as.factor(estrisk)) |>
+  select(level1, level2, level3, level4, estrisk, driver) |>
+
+# create a path from the root to the leaf for the sunburt plot to read 
+  mutate(leaf = paste(level1, level2, level3, level4, sep = "/"),
+         root3 = paste(level1, level2, level3, sep = "/"),
+         root2 = paste(level1, level2, sep = "/"),
+         root1 = level1,
+         value = 1) # Assign a dummy 'value' of 1 for each leaf so that spacing is equal 
+
+```
+
+```{r}
+plot = risks |>
+  plot_ly(ids = ~leaf, labels = ~level4, parents = ~root3,
+               values = ~value, branchvalues = "total", type = 'sunburst')
+
+plot
+```
+
+```{r}
+#| label: createriskrose 
+#| warning: False
+#| message: False
+
+
+
+risks |>
+  ggplot() +
+  geom_bar(aes(x = 1, y = 1, fill = estrisk, group = level4), 
+           width = 1, stat = "identity") +
+  #geom_bar(aes(x = 2, y = 1, fill = category, group = category), 
+          # width = 1, stat = "identity") +
+  coord_polar(theta = "y") +
+  scale_fill_brewer(palette = "Set3") +
+  theme_void() +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme(legend.position = "none")
+
+
+```

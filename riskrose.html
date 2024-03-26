@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>risk rose</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="riskrose_files/libs/clipboard/clipboard.min.js"></script>
+<script src="riskrose_files/libs/quarto-html/quarto.js"></script>
+<script src="riskrose_files/libs/quarto-html/popper.min.js"></script>
+<script src="riskrose_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="riskrose_files/libs/quarto-html/anchor.min.js"></script>
+<link href="riskrose_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="riskrose_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="riskrose_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="riskrose_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="riskrose_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="riskrose_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<script src="riskrose_files/libs/plotly-binding-4.10.4/plotly.js"></script>
+<script src="riskrose_files/libs/typedarray-0.1/typedarray.min.js"></script>
+<script src="riskrose_files/libs/jquery-3.5.1/jquery.min.js"></script>
+<link href="riskrose_files/libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
+<script src="riskrose_files/libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
+<link href="riskrose_files/libs/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css" rel="stylesheet">
+<script src="riskrose_files/libs/plotly-main-2.11.1/plotly-latest.min.js"></script>
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">risk rose</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(plotly)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># upload the csv file (replace name with specific file path for each airport's table)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>risks <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="st">"~/desktop/Climate Risk Rose for Airports.csv"</span>, <span class="at">skip=</span> <span class="dv">3</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># create usable variable names   </span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="st">"level1"</span> <span class="ot">=</span> <span class="st">"Level 1...1"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>         <span class="st">"level2"</span> <span class="ot">=</span> <span class="st">"Level 2...2"</span>, </span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>         <span class="st">"level3"</span> <span class="ot">=</span> <span class="st">"Level 3...3"</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>         <span class="st">"level4"</span> <span class="ot">=</span> <span class="st">"Level 4...4"</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>         <span class="st">"estrisk"</span> <span class="ot">=</span> <span class="st">"Estimated Risk Score"</span>, </span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>         <span class="st">"driver"</span> <span class="ot">=</span> <span class="st">"Climate Driver"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># make each necessary variable a factor (to make the data usable for sorting and color-coding within the risk rose)  </span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">level1 =</span> <span class="fu">as.factor</span>(level1),</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>         <span class="at">level2 =</span> <span class="fu">as.factor</span>(level2),</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">level3 =</span> <span class="fu">as.factor</span>(level3),</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>         <span class="at">driver =</span> <span class="fu">as.factor</span>(driver)) <span class="sc">|&gt;</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># handle blanks, N/As, or errors (turn them into 0s that will be blanks in the risk rose )</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">estrisk =</span> <span class="fu">as.numeric</span>(estrisk),</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>         <span class="at">estrisk =</span> <span class="fu">ifelse</span>(<span class="fu">is.integer</span>(estrisk), estrisk, <span class="dv">0</span>),</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">estrisk =</span> <span class="fu">as.factor</span>(estrisk)) <span class="sc">|&gt;</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(level1, level2, level3, level4, estrisk, driver) <span class="sc">|&gt;</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co"># create a path from the root to the leaf for the sunburt plot to read </span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">leaf =</span> <span class="fu">paste</span>(level1, level2, level3, level4, <span class="at">sep =</span> <span class="st">"/"</span>),</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>         <span class="at">root3 =</span> <span class="fu">paste</span>(level1, level2, level3, <span class="at">sep =</span> <span class="st">"/"</span>),</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>         <span class="at">root2 =</span> <span class="fu">paste</span>(level1, level2, <span class="at">sep =</span> <span class="st">"/"</span>),</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>         <span class="at">root1 =</span> level1,</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>         <span class="at">value =</span> <span class="dv">1</span>) <span class="co"># Assign a dummy 'value' of 1 for each leaf so that spacing is equal </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>plot <span class="ot">=</span> risks <span class="sc">|&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_ly</span>(<span class="at">ids =</span> <span class="sc">~</span>leaf, <span class="at">labels =</span> <span class="sc">~</span>level4, <span class="at">parents =</span> <span class="sc">~</span>root3,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">values =</span> <span class="sc">~</span>value, <span class="at">branchvalues =</span> <span class="st">"total"</span>, <span class="at">type =</span> <span class="st">'sunburst'</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>plot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="plotly html-widget html-fill-item" id="htmlwidget-567fa1ac201cd2328cb7" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-567fa1ac201cd2328cb7">{"x":{"visdat":{"88f213ac08af":["function () ","plotlyVisDat"]},"cur_data":"88f213ac08af","attrs":{"88f213ac08af":{"ids":{},"labels":{},"parents":{},"values":{},"branchvalues":"total","alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"sunburst"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"ids":["Transition Risks and Opportunities/Policy and Regulation/National commitment achieving net zero by 2050/Regulatory requirement to achieve net zero","Transition Risks and Opportunities/Policy and Regulation/National commitment achieving net zero by 2050/Mandate or funding in place to promote uptake of SAF","Transition Risks and Opportunities/Technology/Net Zero on the ground/Implementation of program to increase energy efficiency of buildings","Transition Risks and Opportunities/Technology/Net Zero on the ground/Substitution of fossil fuel use on-site","Transition Risks and Opportunities/Technology/Net Zero on the ground/Installation of renewable energy on-site","Transition Risks and Opportunities/Technology/Net Zero on the ground/Installation of renewable energy off-site","Transition Risks and Opportunities/Technology/Net Zero on the ground/Availability of green tariff electricity for on-site consumption","Transition Risks and Opportunities/Technology/Net Zero on the ground/Electrification of ground support equipment (GSE)","Transition Risks and Opportunities/Technology/Net Zero on the ground/Provision of on-site GSE charging points","Transition Risks and Opportunities/Technology/Net Zero on the ground/Provision of on-site electric taxi charging points","Transition Risks and Opportunities/Technology/Net Zero on the ground/Provision of on-site staff electric vehicles charging points","Transition Risks and Opportunities/Technology/Net Zero on the ground/Provision of on-site passenger electric vehicles charging points","Transition Risks and Opportunities/Technology/Net Zero on the ground/Provision of on-site third party contractor electric vehicles charging points","Transition Risks and Opportunities/Technology/Net Zero on the ground/Provision of on-site electric bus and coach charging points","Transition Risks and Opportunities/Technology/Net Zero on the ground/Increasing public transport","Transition Risks and Opportunities/Technology/Net Zero in the air/Airspace management","Transition Risks and Opportunities/Technology/Net Zero in the air/Aircraft fleet renewal","Transition Risks and Opportunities/Technology/Net Zero in the air/SAF incentive","Transition Risks and Opportunities/Technology/Net Zero in the air/SAF supply and delivery","Transition Risks and Opportunities/Technology/Net Zero in the air/Zero emission aviation","Transition Risks and Opportunities/Market/Market share/SAF hub: preferrential destination to ensure airlines meet SAF mandates","Transition Risks and Opportunities/Market/Passenger demand/Propensity to fly to certain destinations increases / decreases","Transition Risks and Opportunities/Market/Passenger demand/Reduced desire to fly","Transition Risks and Opportunities/Market/Supply chain/Customer influence on supply chain (e.g. retail in terminal buuldings)","Transition Risks and Opportunities/Reputational/Commitment to net zero not achieved/Sector remains 'hard to decarbonise'","Physical Risks/Own assets/On the ground/Flooding of runways (sea level rise)","Physical Risks/Own assets/On the ground/Flooding of runways (rainstorms)","Physical Risks/Own assets/On the ground/Flooding of taxi ways (sea level rise)","Physical Risks/Own assets/On the ground/Flooding of taxi ways (rainstorms)","Physical Risks/Own assets/On the ground/Flooding of terminal buildings (sea level rise)","Physical Risks/Own assets/On the ground/Flooding of terminal buildings (rainstorms)","Physical Risks/Own assets/On the ground/Flooding of ancillary infrastructure (sea level rise)","Physical Risks/Own assets/On the ground/Flooding of ancillary infrastructure (rainstorms)","Physical Risks/Own assets/On the ground/Increased spacing for takeoff and landings (lightning)","Physical Risks/Own assets/On the ground/Reduced runway operational capacity (high winds)","Physical Risks/Own assets/On the ground/Reduced use of air bridges and high structures (high winds)","Physical Risks/Own assets/On the ground/Localised turbulence outside buildings (high winds)","Physical Risks/Own assets/On the ground/Heat damage to runways/tarmacs (high summer temperatures)","Physical Risks/Own assets/On the ground/Heat damage to infrastructure (high summer temperatures)","Physical Risks/Own assets/On the ground/Increased accumulation of rubber on runway (high summer temperatures)","Physical Risks/Own assets/On the ground/Electronic equipment failure (high summer temperatures)","Physical Risks/Own assets/On the ground/Decreased landing speed (high summer temperatures)","Physical Risks/Own assets/On the ground/Passenger and staff discomfort (high summer temperatures)","Physical Risks/Own assets/On the ground/Heightened fire risk (high summer temperatures)","Physical Risks/Own assets/On the ground/Higher heating costs (extreme winter weather)","Physical Risks/Own assets/On the ground/Ice and snow on tarmacs, runways (extreme winter weather)","Physical Risks/Own assets/On the ground/De-Icing required (extreme winter weather)","Physical Risks/Own assets/On the ground/Debris on the runways or taxi ways (high winds)","Physical Risks/Own assets/On the ground/Delays as increased spacing for aircraft landing and taking off (high winds)","Physical Risks/Own assets/On the ground/Runway closure (high winds)","Physical Risks/Own assets/On the ground/Damage to airport buildings and facilities (high winds)","Physical Risks/Airline operations/In the air/Maximum takeoff weight lowered (high summer temperatures)","Physical Risks/Airline operations/In the air/Re-routing due to increased turbulence (storms)","Physical Risks/Airline operations/In the air/Re-routing to reduce contrail formation","Physical Risks/Airline operations/In the air/Increased turbulence (high winds)","Physical Risks/Airline operations/In the air/Jet stream increases fuel efficiency","Physical Risks/Airline operations/In the air/Damage to navigation systems due to lightning","Physical Risks/Airline operations/In the air/Increased longevity of wind tip vortex effect due to general becalming of surface wind speeds","Physical Risks/Airline operations/In the air/Re-routing for efficiency due to change in wind patterns","Physical Risks/Supporting infrastructure/Surface Access/Flooding of local roads (sea level rise)","Physical Risks/Supporting infrastructure/Surface Access/Flooding of local roads (rain storms)","Physical Risks/Supporting infrastructure/Surface Access/Closure of local roads due to high winds (e.g. tree fall)","Physical Risks/Supporting infrastructure/Surface Access/Heat damage to local roads (high summer temperatures)","Physical Risks/Supporting infrastructure/Surface Access/Flooding of local rail services (sea level rise)","Physical Risks/Supporting infrastructure/Surface Access/Flooding of local rail services (rain storms)","Physical Risks/Supporting infrastructure/Surface Access/Closure of local rail services due to high winds (e.g. tree fall)","Physical Risks/Supporting infrastructure/Surface Access/Heat damage to local rail services (summer temperatures)","Physical Risks/Supporting infrastructure/Electrical Supply/Interruption to  electrical supply (sea level rise)","Physical Risks/Supporting infrastructure/Electrical Supply/Interruption to electrical supply (rain storms)","Physical Risks/Supporting infrastructure/Electrical Supply/Interruption to  electrical supply (high winds)","Physical Risks/Supporting infrastructure/Electrical Supply/Interruption to  electrical supply (summer temperatures)"],"labels":["Regulatory requirement to achieve net zero","Mandate or funding in place to promote uptake of SAF","Implementation of program to increase energy efficiency of buildings","Substitution of fossil fuel use on-site","Installation of renewable energy on-site","Installation of renewable energy off-site","Availability of green tariff electricity for on-site consumption","Electrification of ground support equipment (GSE)","Provision of on-site GSE charging points","Provision of on-site electric taxi charging points","Provision of on-site staff electric vehicles charging points","Provision of on-site passenger electric vehicles charging points","Provision of on-site third party contractor electric vehicles charging points","Provision of on-site electric bus and coach charging points","Increasing public transport","Airspace management","Aircraft fleet renewal","SAF incentive","SAF supply and delivery","Zero emission aviation","SAF hub: preferrential destination to ensure airlines meet SAF mandates","Propensity to fly to certain destinations increases / decreases","Reduced desire to fly","Customer influence on supply chain (e.g. retail in terminal buuldings)","Sector remains 'hard to decarbonise'","Flooding of runways (sea level rise)","Flooding of runways (rainstorms)","Flooding of taxi ways (sea level rise)","Flooding of taxi ways (rainstorms)","Flooding of terminal buildings (sea level rise)","Flooding of terminal buildings (rainstorms)","Flooding of ancillary infrastructure (sea level rise)","Flooding of ancillary infrastructure (rainstorms)","Increased spacing for takeoff and landings (lightning)","Reduced runway operational capacity (high winds)","Reduced use of air bridges and high structures (high winds)","Localised turbulence outside buildings (high winds)","Heat damage to runways/tarmacs (high summer temperatures)","Heat damage to infrastructure (high summer temperatures)","Increased accumulation of rubber on runway (high summer temperatures)","Electronic equipment failure (high summer temperatures)","Decreased landing speed (high summer temperatures)","Passenger and staff discomfort (high summer temperatures)","Heightened fire risk (high summer temperatures)","Higher heating costs (extreme winter weather)","Ice and snow on tarmacs, runways (extreme winter weather)","De-Icing required (extreme winter weather)","Debris on the runways or taxi ways (high winds)","Delays as increased spacing for aircraft landing and taking off (high winds)","Runway closure (high winds)","Damage to airport buildings and facilities (high winds)","Maximum takeoff weight lowered (high summer temperatures)","Re-routing due to increased turbulence (storms)","Re-routing to reduce contrail formation","Increased turbulence (high winds)","Jet stream increases fuel efficiency","Damage to navigation systems due to lightning","Increased longevity of wind tip vortex effect due to general becalming of surface wind speeds","Re-routing for efficiency due to change in wind patterns","Flooding of local roads (sea level rise)","Flooding of local roads (rain storms)","Closure of local roads due to high winds (e.g. tree fall)","Heat damage to local roads (high summer temperatures)","Flooding of local rail services (sea level rise)","Flooding of local rail services (rain storms)","Closure of local rail services due to high winds (e.g. tree fall)","Heat damage to local rail services (summer temperatures)","Interruption to  electrical supply (sea level rise)","Interruption to electrical supply (rain storms)","Interruption to  electrical supply (high winds)","Interruption to  electrical supply (summer temperatures)"],"parents":["Transition Risks and Opportunities/Policy and Regulation/National commitment achieving net zero by 2050","Transition Risks and Opportunities/Policy and Regulation/National commitment achieving net zero by 2050","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero on the ground","Transition Risks and Opportunities/Technology/Net Zero in the air","Transition Risks and Opportunities/Technology/Net Zero in the air","Transition Risks and Opportunities/Technology/Net Zero in the air","Transition Risks and Opportunities/Technology/Net Zero in the air","Transition Risks and Opportunities/Technology/Net Zero in the air","Transition Risks and Opportunities/Market/Market share","Transition Risks and Opportunities/Market/Passenger demand","Transition Risks and Opportunities/Market/Passenger demand","Transition Risks and Opportunities/Market/Supply chain","Transition Risks and Opportunities/Reputational/Commitment to net zero not achieved","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Own assets/On the ground","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Airline operations/In the air","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Surface Access","Physical Risks/Supporting infrastructure/Electrical Supply","Physical Risks/Supporting infrastructure/Electrical Supply","Physical Risks/Supporting infrastructure/Electrical Supply","Physical Risks/Supporting infrastructure/Electrical Supply"],"values":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"branchvalues":"total","type":"sunburst","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(255,255,255,1)"}},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>risks <span class="sc">|&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> <span class="dv">1</span>, <span class="at">fill =</span> estrisk, <span class="at">group =</span> level4), </span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">width =</span> <span class="dv">1</span>, <span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_bar(aes(x = 2, y = 1, fill = category, group = category), </span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>          <span class="co"># width = 1, stat = "identity") +</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_polar</span>(<span class="at">theta =</span> <span class="st">"y"</span>) <span class="sc">+</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set3"</span>) <span class="sc">+</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>() <span class="sc">+</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="fu">guide_legend</span>(<span class="at">reverse =</span> <span class="cn">TRUE</span>)) <span class="sc">+</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="riskrose_files/figure-html/createriskrose-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
