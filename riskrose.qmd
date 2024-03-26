@@ -46,20 +46,18 @@ risks = read_csv("~/desktop/Climate Risk Rose for Airports.csv", skip= 3) |>
   select(level1, level2, level3, level4, estrisk, driver) |>
 
 # create a path from the root to the leaf for the sunburt plot to read 
-  mutate(leaf = paste(level1, level2, level3, level4, sep = "/"),
-         root3 = paste(level1, level2, level3, sep = "/"),
-         root2 = paste(level1, level2, sep = "/"),
-         root1 = level1,
+  mutate(id = paste(level1, level2, level3, level4, sep = " - "),
+         parent = paste(level1, level2, level3, sep = " - "),
          value = 1) # Assign a dummy 'value' of 1 for each leaf so that spacing is equal 
 
 ```
 
 ```{r}
-plot = risks |>
-  plot_ly(ids = ~leaf, labels = ~level4, parents = ~root3,
-               values = ~value, branchvalues = "total", type = 'sunburst')
 
-plot
+
+fig <- plot_ly(risks, ids = ~id, labels = ~level4, parents = ~parent, type = 'sunburst')
+
+fig
 ```
 
 ```{r}
