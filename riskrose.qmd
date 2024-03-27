@@ -11,10 +11,6 @@ editor: visual
 #| echo: False
 
 library(tidyverse)
-library(dplyr)
-library(tibble)
-library(tidyr)
-library(ggplot2)
 library(plotly)
 ```
 
@@ -39,12 +35,6 @@ risks = read_csv("~/desktop/Climate Risk Rose for Airports.csv", skip= 3) |>
   mutate(estrisk = as.numeric(estrisk),
         estrisk = ifelse(is.na(estrisk), "blank", estrisk),
         estrisk = ifelse(estrisk == "0", "blank", estrisk)) 
-  
-# make each necessary variable a factor (to make the data usable for sorting and color-coding within the risk rose) 
- # mutate(level1 = as.factor(level1),
-      #   level2 = as.factor(level2),
-      #   level3 = as.factor(level3),
-        # driver = as.factor(driver))
 ```
 
 ```{r}
