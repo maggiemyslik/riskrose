@@ -8,6 +8,7 @@ editor: visual
 #| label: load-packages
 #| warning: False
 #| message: False
+#| echo: False
 
 library(tidyverse)
 library(dplyr)
@@ -37,19 +38,20 @@ risks = read_csv("~/desktop/Climate Risk Rose for Airports.csv", skip= 3) |>
 # standardize N/As in the risk rating 
   mutate(estrisk = as.numeric(estrisk),
         estrisk = ifelse(is.na(estrisk), "blank", estrisk),
-        estrisk = ifelse(estrisk == "0", "blank", estrisk)) |>
+        estrisk = ifelse(estrisk == "0", "blank", estrisk)) 
   
 # make each necessary variable a factor (to make the data usable for sorting and color-coding within the risk rose) 
-  mutate(level1 = as.factor(level1),
-         level2 = as.factor(level2),
-         level3 = as.factor(level3),
-         driver = as.factor(driver))
+ # mutate(level1 = as.factor(level1),
+      #   level2 = as.factor(level2),
+      #   level3 = as.factor(level3),
+        # driver = as.factor(driver))
 ```
 
 ```{r}
 #| label: make-data-usable-for-plotly
 #| warning: False
 #| message: False
+#| echo: False
 
 
 ### GUIDE FROM PLOTLY ###
@@ -62,15 +64,20 @@ risks = read_csv("~/desktop/Climate Risk Rose for Airports.csv", skip= 3) |>
 
 # Each parent must be defined before its children. The top-level parent should have no parent id (it can be an empty string)
 
-###
+# create function that maps estrisk value to a color for risk levels 1 through 3
+getColor1 <- function(level1) {
+  if (level1 == "Transition Risks and Opportunities"){
+    return("#3d85c6")}
+  else {
+    return("#0b5394")}}
 
 # create and put together plotly table: parent values = risk level1
 data1 = risks |> 
   mutate(ids = level1,
          parents = ' ',
          labels = level1,
-         estrisk = " ") |>
-  select(ids, parents, labels, estrisk) |>
+         colors = sapply(level1, getColor1)) |>
+  select(ids, parents, labels, colors) |>
   distinct()
   
 # create and put together plotly table: risk level2 with parent values level 1
@@ -78,8 +85,8 @@ data2 = risks |>
   mutate(ids = paste(level1, level2, sep = " - "),
          parents = level1,
          labels = level2,
-         estrisk = " ") |>
-  select(ids, parents, labels, estrisk)|>
+         colors = sapply(level1, getColor1)) |>
+  select(ids, parents, labels, colors)|>
   distinct()
 
 # create and put together plotly table: risk level3 with parent values level1 - level2
@@ -87,26 +94,98 @@ data3 = risks |>
   mutate(ids = paste(level1, level2, level3, sep = " - "),
          parents = paste(level1, level2, sep = " - "),
          labels = level3,
-         estrisk = " ")|>
-  select(ids, parents, labels, estrisk)|>
+         colors = sapply(level1, getColor1)) |>
+  select(ids, parents, labels, colors)|>
   distinct()
+
+# create function that maps estrisk value to a color for risk level 4
+getColor <- function(estrisk) {
+  if (estrisk == "blank"){
+    return("#ffffff")}
+  else {
+    # Convert estrisk to numeric and interpolate the color
+    estrisk_val = as.numeric(estrisk)
+    color_matrix = colorRamp(c("#6aa84f", "#ffbf00", "#d61f1f"))(estrisk_val)
+    return(rgb(color_matrix[1], color_matrix[2], color_matrix[3], maxColorValue = 255))}}
 
 # create and put together plotly table: risk level4 with parent values level1 - level2 - level3
 data4 = risks |>
   mutate(
     ids = paste(level1, level2, level3, level4, sep = " - "),
     parents = paste(level1, level2, level3, sep = " - "),
-    labels = level4,
-    estrisk = estrisk
-  ) |>
+    labels = level4) |>
 # create color scale from 0 to 1 (to handle any risk rating scale), while keeping blank values separate 
   mutate(estrisk_numeric = ifelse(estrisk == "blank", NA_real_, as.numeric(estrisk))) |>
   mutate(estrisk = ifelse(is.na(estrisk_numeric), "blank", 
                           (estrisk_numeric - min(estrisk_numeric, na.rm = TRUE)) / 
                           (max(estrisk_numeric, na.rm = TRUE) - min(estrisk_numeric, na.rm = 
                                                                       TRUE)))) |>
-  select(ids, parents, labels, estrisk) |> 
-  distinct()
+  mutate(colors = sapply(estrisk, getColor)) |>
+  select(ids, parents, labels, colors) |> 
+  distinct() 
+
+# combine level 1 through 4 tables into one plotlytable 
+plotlyrisks = rbind(data1, data2, data3, data4) 
+
+```
+
+```{r}
+#| label: text-formatting
+#| warning: False
+#| message: False
+#| echo: False
+
+# create function that produces automatic line breaks to make rose segments more readable 
+processText = function(labels, ids, maxCharsInner, maxCharsOuter, colors) {
+  sapply(seq_along(labels), function(i) {
+    
+    # replace text on "blank" segments with an empty string so that nothing is revealed when 
+    # hovered over for irrelevent risks 
+    if (colors[i] == "#ffffff") {
+      return("")
+    }
+    
+    # Determine the depth of the current label
+    depth = length(strsplit(ids[i], "/")[[1]]) 
+    
+    # Determine the appropriate maxChars based on depth
+    maxChars = ifelse(depth > 3, maxCharsOuter, maxCharsInner)
+
+    label = labels[i]
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+# apply function to insert breaks every 15 characters
+maxCharsInner = 9
+maxCharsOuter = 20
+
+plotlyrisks = plotlyrisks |>
+  mutate(
+    processedLabels = processText(
+      plotlyrisks$labels,
+      plotlyrisks$ids,
+      maxCharsInner,
+      maxCharsOuter, 
+      colors
+    )
+  )
+
 
 ```
 
@@ -114,23 +193,22 @@ data4 = risks |>
 #| label: create-plotly-riskrose
 #| warning: False
 #| message: False
+#| echo: False
 
-plotlyrisks = rbind(data1, data2, data3, data4) 
-
-innercolors = c("Transition Risks and Opportunities" = "lightsteelblue", "Physical Risks" = "steelblue")
-outercolors = c("low" = "lightgreen", "middle" = "yellow", high = "red")
 
 riskrose = plot_ly()
 
 riskrose = riskrose |> add_trace(
   type='sunburst',
   ids=plotlyrisks$ids,
-  labels=plotlyrisks$labels,
+  labels=plotlyrisks$processedLabels,
   parents=plotlyrisks$parents,
-  domain=list(column=1),
+  marker = list(colors = plotlyrisks$colors),
+  insidetextfont = list(color = "white"),
+  domain = list(column = 1),
   maxdepth=5,
-  insidetextorientation='radial'
-)
+  insidetextfont = list(size = 20),
+  insidetextorientation='radial')
 
 riskrose
 ```
