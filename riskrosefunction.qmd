@@ -1,0 +1,282 @@
+---
+title: "risk-rose as function"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| warning: False
+#| message: False
+#| echo: False
+
+library(tidyverse)
+library(plotly)
+```
+
+```{r}
+#| label: load-and-clean-data
+#| warning: False
+#| message: False
+#| echo: False
+
+
+# FUNCTION: load_data(filepath) 
+# INPUT: file_path = file path of CSV
+# OUTPUT: risks = cleaned and read dataframe
+
+load_data = function(filepath) {
+  
+  # read in CSV, remove redundant lines, label variables with headers 
+  risks = read_csv(filepath, skip = 3)
+  colnames(risks) = as.character(unlist(risks[1, ]))
+  risks = risks[-1, ]
+    
+    # rename relevent variables to usable names 
+  risks |>  
+  rename("level1" = "Level 1...1",
+         "level2" = "Level 2...2", 
+         "level3" = "Level 3...3",
+         "level4" = "Level 4...4",
+         "estrisk" = "Estimated Risk Score") |>
+    
+    # remove redundant columns
+    select(level1, level2, level3, level4, estrisk) |>
+    
+    # standardize N/As and 0s in the risk rating (blank rose segments)
+    mutate(estrisk = as.numeric(estrisk),
+        estrisk = ifelse(is.na(estrisk), "blank", estrisk),
+        estrisk = ifelse(estrisk == "0", "blank", estrisk)) 
+  
+  return(risks)}
+```
+
+```{r}
+#| label: create-plotly-sunburst-dataset
+#| warning: False
+#| message: False
+#| echo: False
+
+### GUIDE FROM PLOTLY ###
+
+# ids: These should be unique identifiers for each sector, sub-sector, and individual component of your chart. In the case of a 4-ring chart, each id will correspond to an entry in the fourth ring, with unique concatenations of the previous levels.
+
+# labels: These will be the text labels displayed on the chart for each id.
+
+# parents: This is the id of the immediate parent level. For top-level entries, this will be blank.
+
+# Each parent must be defined before its children. The top-level parent should have no parent id (it can be an empty string)
+
+# FUNCTION: getColorInner(level1)
+# INPUT: level1 = category of risk
+# OUTPUT: a hex code corresponding to physical vs transition risks 
+
+getColorInner = function(level1) {
+  if (level1 == "Transition Risks and Opportunities"){
+    return("#3d85c6")}
+  else {
+    return("#0b5394")}}
+
+# FUNCTION: getColorOuter(estrisk)
+# INPUT: estrisk = the estimated risk rating in a range from 0 to 1 OR "blank" 
+# OUTPUT: a hex code that is white for blanks and scaled on a spectrum from green to red for numeric risk ratings   
+
+getColorOuter = function(estrisk) {
+  
+  # make blanks white 
+  if (estrisk == "blank"){
+    return("#ffffff")}
+  
+  # convert numeric values into a scale from 0 to 1 to standardize risk level ratings 
+  else {
+    estrisk_numeric = as.numeric(estrisk) 
+    estrisk = estrisk_numeric - min(estrisk_numeric, na.rm = TRUE) / (max(estrisk_numeric, 
+    na.rm = TRUE) - min(estrisk_numeric, na.rm = TRUE)) 
+      
+    # convert estrisk numeric value into standardized color system 
+    color_matrix = colorRamp(c("#6aa84f", "#ffbf00", "#d61f1f"))(estrisk)
+    
+    # convert output color matrix RGB into hexcode 
+    hexcode = rgb(color_matrix[1], color_matrix[2], color_matrix[3], maxColorValue = 255)
+    return(hexcode)}}
+
+
+# FUNCTION: getLevel1Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data1 = a plotly table with parent values and labels for risk level 1
+
+getLevel1Table = function(risks){
+  data1 = risks |> 
+  mutate(ids = level1,
+         parents = ' ',
+         labels = level1,
+         colors = sapply(level1, getColorInner)) |>
+    select(ids, parents, labels, colors) |>
+    distinct()
+  return(data1)}
+  
+# FUNCTION: getLevel2Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data2 = a plotly table with parent values and labels for risk level 2
+
+getLevel2Table = function(risks){
+  data2 = risks |> 
+  mutate(ids = paste(level1, level2, sep = " - "),
+         parents = level1,
+         labels = level2,
+         colors = sapply(level1, getColorInner)) |>
+    select(ids, parents, labels, colors) |>
+    distinct()
+  return(data2)}
+
+# FUNCTION: getLevel3Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data3 = a plotly table with parent values and labels for risk level 3
+
+getLevel3Table = function(risks){
+  data3 = risks |> 
+  mutate(ids = paste(level1, level2, level3, sep = " - "),
+         parents = paste(level1, level2, sep = " - "),
+         labels = level3,
+         colors = sapply(level1, getColorInner)) |>
+    select(ids, parents, labels, colors) |>
+    distinct()
+  return(data3)}
+
+# FUNCTION: getLevel4Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data4 = a plotly table with parent values, labels, and colors for risk level 4
+
+getLevel4Table = function(risks){
+  data4 = risks |> 
+  mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
+         parents = paste(level1, level2, level3, sep = " - "),
+         labels = level4,
+         colors = sapply(estrisk, getColorOuter)) |>
+    select(ids, parents, labels, colors) |>
+    distinct()
+  return(data4)}
+
+# FUNCTION: createPlotlyTable(risks)
+# INPUT: risks = cleaned data table
+# OUTPUT: plotlyrisks = a combined plotly table that includes all risk levels with colors
+
+createPlotlyTable = function(risks) {
+  data1 = getLevel1Table(risks)
+  data2 = getLevel2Table(risks)
+  data3 = getLevel3Table(risks)
+  data4 = getLevel4Table(risks)
+
+  plotlyrisks = rbind(data1, data2, data3, data4)
+  return(plotlyrisks)
+}
+```
+
+```{r}
+#| label: text-formatting
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: processText(labels, ids, colors)
+# INPUTS: labels, ids, colors = specific variables within the plotlyrisks table  
+# OUTPUT: new label that is blank for the empty spaces, with line breaks every 9-characters for the inner rings, and line breaks every 15-characters for the outer rings
+
+processText = function(labels, ids, colors) {
+  sapply(seq_along(labels), function(i) {
+    
+    # replace text on "blank" segments with an empty string
+    if (colors[i] == "#ffffff") {
+      return("")
+    }
+    
+    # Determine the depth of the current label
+    depth = length(strsplit(ids[i], "/")[[1]]) 
+    
+    # Determine the appropriate maxChars based on depth
+    maxChars = ifelse(depth > 3, 15, 9)
+
+    label = labels[i]
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+# FUNCTION: createLabels(plotlyrisks)
+# INPUTS: plotlyrisks =  table in the plotly format   
+# OUTPUT: plotlyrisksformatted =  plotlyrisks with new column "processed labels" that includes text breaks and empty strings in the correct places
+
+createLabels = function(plotlyrisks){
+  # Apply the processText function to the labels, ids, and colors of plotlyrisks
+  plotlyrisksformatted = plotlyrisks |>
+    mutate(
+      processedLabels = processText(
+        plotlyrisks$labels,
+        plotlyrisks$ids,
+        plotlyrisks$colors
+      )
+    )
+    return(plotlyrisksformatted)}  
+
+```
+
+```{r}
+#| label: create-riskrose
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: createRose(plotlyrisksformatted)
+# INPUTS: plotlyrisksformatted =  plotly formatted table with processed labels column   
+# OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
+
+createRose = function(plotlyrisksformatted){
+  riskrose = plot_ly()
+  riskrose = riskrose |> add_trace(
+    type = 'sunburst',
+    ids = plotlyrisksformatted$ids,
+    labels = plotlyrisksformatted$processedLabels,
+    parents = plotlyrisksformatted$parents,
+    marker = list(colors = plotlyrisksformatted$colors),
+    insidetextfont = list(color = "white"),
+    domain = list(column = 1),
+    maxdepth = 5,
+    insidetextfont = list(size = 20),
+    insidetextorientation = 'radial'
+  )
+  return(riskrose)}
+```
+
+```{r}
+#| label: combine-functions
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: riskroseFromCSV(filepath)
+# INPUTS: filepath = file path of CSV containing risk data
+# OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
+
+
+riskroseFromCSV = function(filepath){
+  risks = load_data(filepath) 
+  plotlyrisks = createPlotlyTable(risks)
+  plotlyrisksformatted = createLabels(plotlyrisks)
+  riskrose = createRose(plotlyrisksformatted)
+  return(riskrose)}
+
+```
