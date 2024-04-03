@@ -220,15 +220,10 @@ riskroseFromCSV = function(filepath){
 
 ```{r}
 #| label: testing 
-#| warning: False
-#| message: False
-#| echo: False
   
   risks = load_data("~/desktop/3tieredriskrose.csv") 
   plotlyrisks = createPlotlyTable(risks)
   plotlyrisksformatted = createLabels(plotlyrisks)
-  
-  
   
   riskrose = plot_ly()
   riskrose = riskrose |>
@@ -236,14 +231,18 @@ riskroseFromCSV = function(filepath){
       type = 'sunburst',
       ids = plotlyrisksformatted$ids,
       labels = plotlyrisksformatted$processedLabels,
-      parents = plotlyrisksformatted$parents,
-      insidetextfont = list(color = "white"),
-      domain = list(column = 1),
-      maxdepth = 4,
-      insidetextfont = list(size = 20),
-      insidetextorientation = 'radial'
-    )
+      parents = plotlyrisksformatted$parents)
+      #insidetextfont = list(color = "white"),
+     #domain = list(column = 1),
+      #maxdepth = 10,
+      #insidetextfont = list(size = 20),
+      #insidetextorientation = 'radial'
+   # )
   
-#riskroseFromCSV("~/desktop/3tieredriskrose.csv") 
+riskroseFromCSV("~/desktop/3tieredriskrose.csv") 
+
+riskrose = riskroseFromCSV("~/desktop/3tieredriskrose.csv") 
+
+riskrose
 
 ```

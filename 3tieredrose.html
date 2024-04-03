@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -33,6 +67,14 @@ ul.task-list li input[type="checkbox"] {
 <script src="3tieredrose_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="3tieredrose_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="3tieredrose_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="3tieredrose_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<script src="3tieredrose_files/libs/plotly-binding-4.10.4/plotly.js"></script>
+<script src="3tieredrose_files/libs/typedarray-0.1/typedarray.min.js"></script>
+<script src="3tieredrose_files/libs/jquery-3.5.1/jquery.min.js"></script>
+<link href="3tieredrose_files/libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
+<script src="3tieredrose_files/libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
+<link href="3tieredrose_files/libs/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css" rel="stylesheet">
+<script src="3tieredrose_files/libs/plotly-main-2.11.1/plotly-latest.min.js"></script>
 
 
 </head>
@@ -60,7 +102,64 @@ ul.task-list li input[type="checkbox"] {
 
 </header>
 
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>  risks <span class="ot">=</span> <span class="fu">load_data</span>(<span class="st">"~/desktop/3tieredriskrose.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 26 Columns: 3
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (3): Tier 3, Tier 2, Tier 1
 
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>  plotlyrisks <span class="ot">=</span> <span class="fu">createPlotlyTable</span>(risks)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  plotlyrisksformatted <span class="ot">=</span> <span class="fu">createLabels</span>(plotlyrisks)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  riskrose <span class="ot">=</span> <span class="fu">plot_ly</span>()</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  riskrose <span class="ot">=</span> riskrose <span class="sc">|&gt;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_trace</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">type =</span> <span class="st">'sunburst'</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">ids =</span> plotlyrisksformatted<span class="sc">$</span>ids,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">labels =</span> plotlyrisksformatted<span class="sc">$</span>processedLabels,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">parents =</span> plotlyrisksformatted<span class="sc">$</span>parents)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>      <span class="co">#insidetextfont = list(color = "white"),</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>     <span class="co">#domain = list(column = 1),</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      <span class="co">#maxdepth = 10,</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      <span class="co">#insidetextfont = list(size = 20),</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>      <span class="co">#insidetextorientation = 'radial'</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>   <span class="co"># )</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">riskroseFromCSV</span>(<span class="st">"~/desktop/3tieredriskrose.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 26 Columns: 3
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (3): Tier 3, Tier 2, Tier 1
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="cell-output-display">
+<div class="plotly html-widget html-fill-item" id="htmlwidget-1eddc3ec4d37a9204d73" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-1eddc3ec4d37a9204d73">{"x":{"visdat":{"e83d4e0e0dc8":["function () ","plotlyVisDat"]},"cur_data":"e83d4e0e0dc8","attrs":{"e83d4e0e0dc8":{"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"sunburst","ids":["Transition","Physical","Transition - Policy and Regulation","Transition - Technology","Transition - Market","Transition - Reputational","Physical - Own Assets","Physical - Airline Operations","Physical - Supporting infrastructure","Transition - Policy and Regulation - National commitment to achieving net zero by 2050","Transition - Technology - Net Zero on the ground","Transition - Technology - Net Zero in the air","Transition - Market - Market share","Transition - Market - Passenger demand","Transition - Market - Supply chain","Transition - Reputational - Investors","Transition - Reputational - Passengers","Physical - Own Assets - Power / Electrical","Physical - Own Assets - Fire Suppression & HVAC Control Systems","Physical - Own Assets - Civil Infrastructure","Physical - Own Assets - Mechanical Systems","Physical - Own Assets - Data Centres","Physical - Own Assets - Electric Vehicles","Physical - Own Assets - Baggage Handling","Physical - Own Assets - Air Bridges","Physical - Own Assets - Runways and Aprons","Physical - Own Assets - Internal Roads, Bus / Rail points of departure and forecourts","Physical - Own Assets - Lagoons and Culverts","Physical - Own Assets - Airfield","Physical - Own Assets - Surface Water and Pollution Control Systems","Physical - Airline Operations - On the ground","Physical - Airline Operations - In the air","Physical - Supporting infrastructure - Surface Access","Physical - Supporting infrastructure - Electrical Supply"],"labels":["Transition","Physical","Policy<br /> and<br /> Regulation","Technology","Market","Reputational","Own<br /> Assets","Airline<br /> Operations","Supporting<br /> infrastructure","National<br /> commitment<br /> to<br /> achieving<br /> net zero<br /> by 2050","Net Zero<br /> on the<br /> ground","Net Zero<br /> in the<br /> air","Market<br /> share","Passenger<br /> demand","Supply<br /> chain","Investors","Passengers","Power /<br /> Electrical","Fire<br /> Suppression<br /> & HVAC<br /> Control<br /> Systems","Civil<br /> Infrastructure","Mechanical<br /> Systems","Data<br /> Centres","Electric<br /> Vehicles","Baggage<br /> Handling","Air<br /> Bridges","Runways<br /> and<br /> Aprons","Internal<br /> Roads,<br /> Bus /<br /> Rail<br /> points of<br /> departure<br /> and<br /> forecourts","Lagoons<br /> and<br /> Culverts","Airfield","Surface<br /> Water and<br /> Pollution<br /> Control<br /> Systems","On the<br /> ground","In the<br /> air","Surface<br /> Access","Electrical<br /> Supply"],"parents":[" "," ","Transition","Transition","Transition","Transition","Physical","Physical","Physical","Policy and Regulation","Technology","Technology","Market","Market","Market","Reputational","Reputational","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Airline Operations","Airline Operations","Supporting infrastructure","Supporting infrastructure"],"insidetextfont":{"color":"white"},"domain":{"column":1},"maxdepth":4,"insidetextorientation":"radial","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"type":"sunburst","ids":["Transition","Physical","Transition - Policy and Regulation","Transition - Technology","Transition - Market","Transition - Reputational","Physical - Own Assets","Physical - Airline Operations","Physical - Supporting infrastructure","Transition - Policy and Regulation - National commitment to achieving net zero by 2050","Transition - Technology - Net Zero on the ground","Transition - Technology - Net Zero in the air","Transition - Market - Market share","Transition - Market - Passenger demand","Transition - Market - Supply chain","Transition - Reputational - Investors","Transition - Reputational - Passengers","Physical - Own Assets - Power / Electrical","Physical - Own Assets - Fire Suppression & HVAC Control Systems","Physical - Own Assets - Civil Infrastructure","Physical - Own Assets - Mechanical Systems","Physical - Own Assets - Data Centres","Physical - Own Assets - Electric Vehicles","Physical - Own Assets - Baggage Handling","Physical - Own Assets - Air Bridges","Physical - Own Assets - Runways and Aprons","Physical - Own Assets - Internal Roads, Bus / Rail points of departure and forecourts","Physical - Own Assets - Lagoons and Culverts","Physical - Own Assets - Airfield","Physical - Own Assets - Surface Water and Pollution Control Systems","Physical - Airline Operations - On the ground","Physical - Airline Operations - In the air","Physical - Supporting infrastructure - Surface Access","Physical - Supporting infrastructure - Electrical Supply"],"labels":["Transition","Physical","Policy<br /> and<br /> Regulation","Technology","Market","Reputational","Own<br /> Assets","Airline<br /> Operations","Supporting<br /> infrastructure","National<br /> commitment<br /> to<br /> achieving<br /> net zero<br /> by 2050","Net Zero<br /> on the<br /> ground","Net Zero<br /> in the<br /> air","Market<br /> share","Passenger<br /> demand","Supply<br /> chain","Investors","Passengers","Power /<br /> Electrical","Fire<br /> Suppression<br /> & HVAC<br /> Control<br /> Systems","Civil<br /> Infrastructure","Mechanical<br /> Systems","Data<br /> Centres","Electric<br /> Vehicles","Baggage<br /> Handling","Air<br /> Bridges","Runways<br /> and<br /> Aprons","Internal<br /> Roads,<br /> Bus /<br /> Rail<br /> points of<br /> departure<br /> and<br /> forecourts","Lagoons<br /> and<br /> Culverts","Airfield","Surface<br /> Water and<br /> Pollution<br /> Control<br /> Systems","On the<br /> ground","In the<br /> air","Surface<br /> Access","Electrical<br /> Supply"],"parents":[" "," ","Transition","Transition","Transition","Transition","Physical","Physical","Physical","Policy and Regulation","Technology","Technology","Market","Market","Market","Reputational","Reputational","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Airline Operations","Airline Operations","Supporting infrastructure","Supporting infrastructure"],"insidetextfont":{"color":"white"},"domain":{"column":1},"maxdepth":4,"insidetextorientation":"radial","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(255,255,255,1)"}},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>riskrose <span class="ot">=</span> <span class="fu">riskroseFromCSV</span>(<span class="st">"~/desktop/3tieredriskrose.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 26 Columns: 3
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (3): Tier 3, Tier 2, Tier 1
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>riskrose</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="plotly html-widget html-fill-item" id="htmlwidget-9f9920fbfba7e7604d89" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-9f9920fbfba7e7604d89">{"x":{"visdat":{"e83d39ceae71":["function () ","plotlyVisDat"]},"cur_data":"e83d39ceae71","attrs":{"e83d39ceae71":{"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"sunburst","ids":["Transition","Physical","Transition - Policy and Regulation","Transition - Technology","Transition - Market","Transition - Reputational","Physical - Own Assets","Physical - Airline Operations","Physical - Supporting infrastructure","Transition - Policy and Regulation - National commitment to achieving net zero by 2050","Transition - Technology - Net Zero on the ground","Transition - Technology - Net Zero in the air","Transition - Market - Market share","Transition - Market - Passenger demand","Transition - Market - Supply chain","Transition - Reputational - Investors","Transition - Reputational - Passengers","Physical - Own Assets - Power / Electrical","Physical - Own Assets - Fire Suppression & HVAC Control Systems","Physical - Own Assets - Civil Infrastructure","Physical - Own Assets - Mechanical Systems","Physical - Own Assets - Data Centres","Physical - Own Assets - Electric Vehicles","Physical - Own Assets - Baggage Handling","Physical - Own Assets - Air Bridges","Physical - Own Assets - Runways and Aprons","Physical - Own Assets - Internal Roads, Bus / Rail points of departure and forecourts","Physical - Own Assets - Lagoons and Culverts","Physical - Own Assets - Airfield","Physical - Own Assets - Surface Water and Pollution Control Systems","Physical - Airline Operations - On the ground","Physical - Airline Operations - In the air","Physical - Supporting infrastructure - Surface Access","Physical - Supporting infrastructure - Electrical Supply"],"labels":["Transition","Physical","Policy<br /> and<br /> Regulation","Technology","Market","Reputational","Own<br /> Assets","Airline<br /> Operations","Supporting<br /> infrastructure","National<br /> commitment<br /> to<br /> achieving<br /> net zero<br /> by 2050","Net Zero<br /> on the<br /> ground","Net Zero<br /> in the<br /> air","Market<br /> share","Passenger<br /> demand","Supply<br /> chain","Investors","Passengers","Power /<br /> Electrical","Fire<br /> Suppression<br /> & HVAC<br /> Control<br /> Systems","Civil<br /> Infrastructure","Mechanical<br /> Systems","Data<br /> Centres","Electric<br /> Vehicles","Baggage<br /> Handling","Air<br /> Bridges","Runways<br /> and<br /> Aprons","Internal<br /> Roads,<br /> Bus /<br /> Rail<br /> points of<br /> departure<br /> and<br /> forecourts","Lagoons<br /> and<br /> Culverts","Airfield","Surface<br /> Water and<br /> Pollution<br /> Control<br /> Systems","On the<br /> ground","In the<br /> air","Surface<br /> Access","Electrical<br /> Supply"],"parents":[" "," ","Transition","Transition","Transition","Transition","Physical","Physical","Physical","Policy and Regulation","Technology","Technology","Market","Market","Market","Reputational","Reputational","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Airline Operations","Airline Operations","Supporting infrastructure","Supporting infrastructure"],"insidetextfont":{"color":"white"},"domain":{"column":1},"maxdepth":4,"insidetextorientation":"radial","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"type":"sunburst","ids":["Transition","Physical","Transition - Policy and Regulation","Transition - Technology","Transition - Market","Transition - Reputational","Physical - Own Assets","Physical - Airline Operations","Physical - Supporting infrastructure","Transition - Policy and Regulation - National commitment to achieving net zero by 2050","Transition - Technology - Net Zero on the ground","Transition - Technology - Net Zero in the air","Transition - Market - Market share","Transition - Market - Passenger demand","Transition - Market - Supply chain","Transition - Reputational - Investors","Transition - Reputational - Passengers","Physical - Own Assets - Power / Electrical","Physical - Own Assets - Fire Suppression & HVAC Control Systems","Physical - Own Assets - Civil Infrastructure","Physical - Own Assets - Mechanical Systems","Physical - Own Assets - Data Centres","Physical - Own Assets - Electric Vehicles","Physical - Own Assets - Baggage Handling","Physical - Own Assets - Air Bridges","Physical - Own Assets - Runways and Aprons","Physical - Own Assets - Internal Roads, Bus / Rail points of departure and forecourts","Physical - Own Assets - Lagoons and Culverts","Physical - Own Assets - Airfield","Physical - Own Assets - Surface Water and Pollution Control Systems","Physical - Airline Operations - On the ground","Physical - Airline Operations - In the air","Physical - Supporting infrastructure - Surface Access","Physical - Supporting infrastructure - Electrical Supply"],"labels":["Transition","Physical","Policy<br /> and<br /> Regulation","Technology","Market","Reputational","Own<br /> Assets","Airline<br /> Operations","Supporting<br /> infrastructure","National<br /> commitment<br /> to<br /> achieving<br /> net zero<br /> by 2050","Net Zero<br /> on the<br /> ground","Net Zero<br /> in the<br /> air","Market<br /> share","Passenger<br /> demand","Supply<br /> chain","Investors","Passengers","Power /<br /> Electrical","Fire<br /> Suppression<br /> & HVAC<br /> Control<br /> Systems","Civil<br /> Infrastructure","Mechanical<br /> Systems","Data<br /> Centres","Electric<br /> Vehicles","Baggage<br /> Handling","Air<br /> Bridges","Runways<br /> and<br /> Aprons","Internal<br /> Roads,<br /> Bus /<br /> Rail<br /> points of<br /> departure<br /> and<br /> forecourts","Lagoons<br /> and<br /> Culverts","Airfield","Surface<br /> Water and<br /> Pollution<br /> Control<br /> Systems","On the<br /> ground","In the<br /> air","Surface<br /> Access","Electrical<br /> Supply"],"parents":[" "," ","Transition","Transition","Transition","Transition","Physical","Physical","Physical","Policy and Regulation","Technology","Technology","Market","Market","Market","Reputational","Reputational","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Own Assets","Airline Operations","Airline Operations","Supporting infrastructure","Supporting infrastructure"],"insidetextfont":{"color":"white"},"domain":{"column":1},"maxdepth":4,"insidetextorientation":"radial","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(255,255,255,1)"}},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
 
 </main>
 <!-- /main column -->
