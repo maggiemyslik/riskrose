@@ -1,0 +1,249 @@
+---
+title: "three tiered risk rose"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| warning: False
+#| message: False
+#| echo: False
+
+library(tidyverse)
+library(plotly)
+```
+
+```{r}
+#| label: load-and-clean-data
+#| warning: False
+#| message: False
+#| echo: False
+
+
+# FUNCTION: load_data(filepath) 
+# INPUT: file_path = file path of CSV
+# OUTPUT: risks = cleaned and read dataframe
+
+load_data = function(filepath) {
+  
+  # read in CSV, remove redundant lines, label variables with headers 
+  risks = read_csv(filepath)
+    
+  # rename variables to usable names 
+  risks = risks |>  
+    rename("level1" = "Tier 1",
+           "level2" = "Tier 2", 
+           "level3" = "Tier 3")
+  
+ # remove redundant columns 
+    risks = risks |>
+      select(level1, level2, level3)
+
+  return(risks)}
+```
+
+```{r}
+#| label: create-plotly-sunburst-dataset
+#| warning: False
+#| message: False
+#| echo: False
+
+### GUIDE FROM PLOTLY ###
+
+# ids: These should be unique identifiers for each sector, sub-sector, and individual component of your chart. In the case of a 4-ring chart, each id will correspond to an entry in the fourth ring, with unique concatenations of the previous levels.
+
+# labels: These will be the text labels displayed on the chart for each id.
+
+# parents: This is the id of the immediate parent level. For top-level entries, this will be blank.
+
+# Each parent must be defined before its children. The top-level parent should have no parent id (it can be an empty string)
+
+# FUNCTION: getLevel1Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data1 = a plotly table with parent values and labels for risk level 1
+
+getLevel1Table = function(risks) {
+  data1 = risks |>
+    na.omit() |>
+    mutate(ids = level1,
+           parents = ' ',
+           labels = level1) |>
+    select(ids, parents, labels) |>
+    distinct()
+  return(data1)
+}
+  
+# FUNCTION: getLevel2Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data2 = a plotly table with parent values and labels for risk level 2
+
+getLevel2Table = function(risks) {
+  data2 = risks |>
+    na.omit() |>
+    mutate(
+      ids = paste(level1, level2, sep = " - "),
+      parents = level1,
+      labels = level2
+    ) |>
+    select(ids, parents, labels) |>
+    distinct()
+  return(data2)
+}
+
+# FUNCTION: getLevel3Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data3 = a plotly table with parent values and labels for risk level 3
+
+getLevel3Table = function(risks) {
+  data3 = risks |>
+    na.omit() |>
+    mutate(
+      ids = paste(level1, level2, level3, sep = " - "),
+      parents = level2,
+      labels = level3
+    ) |>
+    select(ids, parents, labels) |>
+    distinct()
+  return(data3)
+}
+
+
+# FUNCTION: createPlotlyTable(risks)
+# INPUT: risks = cleaned data table
+# OUTPUT: plotlyrisks = a combined plotly table that includes all risk levels with colors
+
+createPlotlyTable = function(risks) {
+  data1 = getLevel1Table(risks)
+  data2 = getLevel2Table(risks)
+  data3 = getLevel3Table(risks)
+  plotlyrisks = rbind(data1, data2, data3)
+  return(plotlyrisks)
+}
+```
+
+```{r}
+#| label: text-formatting
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: processText(labels, ids, colors)
+# INPUTS: labels, ids, colors = specific variables within the plotlyrisks table  
+# OUTPUT: new label that is blank for the empty spaces, with line breaks every 9-characters for the inner rings, and line breaks every 15-characters for the outer rings
+
+processText = function(labels, ids, colors) {
+  sapply(seq_along(labels), function(i) {
+    maxChars = 9
+    label = labels[i]
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+# FUNCTION: createLabels(plotlyrisks)
+# INPUTS: plotlyrisks =  table in the plotly format   
+# OUTPUT: plotlyrisksformatted =  plotlyrisks with new column "processed labels" that includes text breaks and empty strings in the correct places
+
+createLabels = function(plotlyrisks){
+  # Apply the processText function to the labels and ids of plotlyrisks
+  plotlyrisksformatted = plotlyrisks |>
+    mutate(
+      processedLabels = processText(
+        plotlyrisks$labels,
+        plotlyrisks$ids,
+      )
+    )
+    return(plotlyrisksformatted)}  
+
+```
+
+```{r}
+#| label: create-riskrose
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: createRose(plotlyrisksformatted)
+# INPUTS: plotlyrisksformatted =  plotly formatted table with processed labels column   
+# OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
+
+createRose = function(plotlyrisksformatted){
+  riskrose = plot_ly()
+  riskrose = riskrose |> add_trace(
+    type = 'sunburst',
+    ids = plotlyrisksformatted$ids,
+    labels = plotlyrisksformatted$processedLabels,
+    parents = plotlyrisksformatted$parents,
+    insidetextfont = list(color = "white"),
+    domain = list(column = 1),
+    maxdepth = 4,
+    insidetextfont = list(size = 20),
+    insidetextorientation = 'radial'
+  )
+  return(riskrose)}
+```
+
+```{r}
+#| label: combine-functions
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: riskroseFromCSV(filepath)
+# INPUTS: filepath = file path of CSV containing risk data
+# OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
+
+
+riskroseFromCSV = function(filepath){
+  risks = load_data(filepath) 
+  plotlyrisks = createPlotlyTable(risks)
+  plotlyrisksformatted = createLabels(plotlyrisks)
+  riskrose = createRose(plotlyrisksformatted)
+  return(riskrose)}
+
+```
+
+```{r}
+#| label: testing 
+#| warning: False
+#| message: False
+#| echo: False
+  
+  risks = load_data("~/desktop/3tieredriskrose.csv") 
+  plotlyrisks = createPlotlyTable(risks)
+  plotlyrisksformatted = createLabels(plotlyrisks)
+  
+  
+  
+  riskrose = plot_ly()
+  riskrose = riskrose |>
+    add_trace(
+      type = 'sunburst',
+      ids = plotlyrisksformatted$ids,
+      labels = plotlyrisksformatted$processedLabels,
+      parents = plotlyrisksformatted$parents,
+      insidetextfont = list(color = "white"),
+      domain = list(column = 1),
+      maxdepth = 4,
+      insidetextfont = list(size = 20),
+      insidetextorientation = 'radial'
+    )
+  
+#riskroseFromCSV("~/desktop/3tieredriskrose.csv") 
+
+```
