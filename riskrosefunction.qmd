@@ -28,20 +28,20 @@ library(plotly)
 load_data = function(filepath) {
   
   # read in CSV, remove redundant lines, label variables with headers 
-  risks = read_csv(filepath, skip = 3)
-  colnames(risks) = as.character(unlist(risks[1, ]))
-  risks = risks[-1, ]
+  risks = read_csv(filepath, skip = 2)
     
-    # rename relevent variables to usable names 
-  risks |>  
-  rename("level1" = "Level 1...1",
-         "level2" = "Level 2...2", 
-         "level3" = "Level 3...3",
-         "level4" = "Level 4...4",
-         "estrisk" = "Estimated Risk Score") |>
-    
-    # remove redundant columns
-    select(level1, level2, level3, level4, estrisk) |>
+  # rename variables to usable names 
+  risks = risks |>  
+    rename("level1" = "...1",
+           "level2" = "...2", 
+           "level3" = "...3",
+           "level4" = "...4",
+           "estrisk" = "3 = Target Risk") 
+  
+    risks = risks[-1, ]  
+    # remove redundant row (headers)
+    risks = risks |>
+      select(level1, level2, level3, level4, estrisk) |>
     
     # standardize N/As and 0s in the risk rating (blank rose segments)
     mutate(estrisk = as.numeric(estrisk),
@@ -81,7 +81,9 @@ getColorInner = function(level1) {
 # INPUT: estrisk = the estimated risk rating in a range from 0 to 1 OR "blank" 
 # OUTPUT: a hex code that is white for blanks and scaled on a spectrum from green to red for numeric risk ratings   
 
-getColorOuter = function(estrisk) {
+# define global variables for range of numeric values within estimated risk column 
+
+getColorOuter = function(estrisk, global_min, global_max) {
   
   # make blanks white 
   if (estrisk == "blank"){
@@ -89,12 +91,11 @@ getColorOuter = function(estrisk) {
   
   # convert numeric values into a scale from 0 to 1 to standardize risk level ratings 
   else {
-    estrisk_numeric = as.numeric(estrisk) 
-    estrisk = estrisk_numeric - min(estrisk_numeric, na.rm = TRUE) / (max(estrisk_numeric, 
-    na.rm = TRUE) - min(estrisk_numeric, na.rm = TRUE)) 
+    normalized_estrisk = (as.numeric(estrisk) - global_min) / (global_max - global_min)
       
     # convert estrisk numeric value into standardized color system 
-    color_matrix = colorRamp(c("#6aa84f", "#ffbf00", "#d61f1f"))(estrisk)
+    
+    color_matrix = colorRamp(c("#6aa84f", "#ffbf00", "#d61f1f"))(normalized_estrisk)
     
     # convert output color matrix RGB into hexcode 
     hexcode = rgb(color_matrix[1], color_matrix[2], color_matrix[3], maxColorValue = 255)
@@ -147,12 +148,17 @@ getLevel3Table = function(risks){
 # INPUT: risks = cleaned data table 
 # OUTPUT: data4 = a plotly table with parent values, labels, and colors for risk level 4
 
+
 getLevel4Table = function(risks){
+  # define min and max estrisk values for the color function
+  global_min = min(as.numeric(risks$estrisk), na.rm = TRUE)
+  global_max = max(as.numeric(risks$estrisk), na.rm = TRUE)
+  # make the correctly formatted and color-coded table
   data4 = risks |> 
-  mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
+    mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
          parents = paste(level1, level2, level3, sep = " - "),
          labels = level4,
-         colors = sapply(estrisk, getColorOuter)) |>
+         colors = sapply(estrisk, getColorOuter, global_min, global_max)) |>
     select(ids, parents, labels, colors) |>
     distinct()
   return(data4)}
@@ -279,4 +285,13 @@ riskroseFromCSV = function(filepath){
   riskrose = createRose(plotlyrisksformatted)
   return(riskrose)}
 
+```
+
+```{r}
+#| label: testing 
+#| warning: False
+#| message: False
+#| echo: False
+
+riskroseFromCSV("~/desktop/Climate Risk Rose for Airports.csv")
 ```
