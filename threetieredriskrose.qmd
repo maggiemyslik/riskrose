@@ -1,0 +1,130 @@
+---
+title: "three tiered rose"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| warning: False
+#| message: False
+#| echo: False
+
+library(tidyverse)
+library(plotly)
+```
+
+```{r}
+#| label: load-and-clean-data
+#| warning: False
+#| message: False
+#| echo: False
+
+# load data, rename variables, remove NAs and unneeded variables 
+risks = read_csv("~/desktop/3tieredriskrose.csv") |>
+  rename("level1" = "Tier 1",
+         "level2" = "Tier 2",
+         "level3" = "Tier 3") |>
+  select(level1, level2, level3) |>
+  na.omit()
+
+# create 3 data frames for each tier level according to the plot.ly guide
+data1 = risks |> 
+  mutate(ids = level1,
+         parents = ' ',
+         labels = level1) |>
+  select(ids, parents, labels) |>
+  distinct()
+data2 = risks |> 
+  mutate(ids = paste(level1, level2, sep = " - "),
+         parents = level1,
+         labels = level2) |>
+  select(ids, parents, labels)|>
+  distinct()
+data3 = risks |> 
+  mutate(ids = paste(level1, level2, level3, sep = " - "),
+         parents = paste(level1, level2, sep = " - "),
+         labels = level3) |>
+  select(ids, parents, labels)|>
+  distinct()
+
+# combine the frames 
+plotlyrisks = rbind(data1, data2, data3) 
+
+```
+
+```{r}
+#| label: text-formatting
+#| warning: False
+#| message: False
+#| echo: False
+
+
+# create function that produces automatic line breaks to make rose segments more readable 
+processText = function(labels, ids) {
+  sapply(seq_along(labels), function(i) {
+    
+    maxChars = 15
+
+    label = labels[i]
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+# apply text function to create line breaks in the labels 
+plotlyrisks = plotlyrisks |>
+  mutate(
+    processedLabels = processText(
+      plotlyrisks$labels,
+      plotlyrisks$ids))
+
+```
+
+```{r}
+#| label: create-rose
+#| warning: False
+#| message: False
+#| echo: False
+
+# create plot 
+fig = plot_ly() 
+
+fig = fig |>
+  add_trace(
+    ids = plotlyrisks$ids,
+    labels = plotlyrisks$processedLabels,
+    parents = plotlyrisks$parents,
+    type = 'sunburst',
+    maxdepth = 4,
+    domain = list(column = 1)
+  ) 
+
+fig = fig |>
+  layout(
+    margin = list(l = 0,
+                  r = 0,
+                  b = 0,
+                  t = 0),
+    sunburstcolorway = c("#3d85c6", "#0b5394"),
+    extendsunburstcolors = TRUE,
+    insidetextfont = list(color = "white", size = 10),
+    insidetextorientation = 'radial')
+
+
+fig
+```
