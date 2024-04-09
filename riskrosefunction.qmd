@@ -28,15 +28,16 @@ library(plotly)
 load_data = function(filepath) {
   
   # read in CSV, remove redundant lines, label variables with headers 
-  risks = read_csv(filepath, skip = 2)
+  risks = read_csv(filepath)
     
   # rename variables to usable names 
+  # use format: newname = names(.)[i] when column positions are finalized 
   risks = risks |>  
-    rename("level1" = "...1",
-           "level2" = "...2", 
-           "level3" = "...3",
-           "level4" = "...4",
-           "estrisk" = "3 = Target Risk") 
+    rename("level1" = "Tier 1",
+           "level2" = "Tier 2", 
+           "level3" = "Tier 3",
+           "level4" = "Tier 4",
+           "estrisk" = "Estimated Risk Score") 
   
     risks = risks[-1, ]  
     # remove redundant row (headers)
@@ -113,7 +114,8 @@ getLevel1Table = function(risks){
          labels = level1,
          colors = sapply(level1, getColorInner)) |>
     select(ids, parents, labels, colors) |>
-    distinct()
+    distinct() |>
+    filter(!is.na(labels))
   return(data1)}
   
 # FUNCTION: getLevel2Table(risks)
@@ -127,7 +129,8 @@ getLevel2Table = function(risks){
          labels = level2,
          colors = sapply(level1, getColorInner)) |>
     select(ids, parents, labels, colors) |>
-    distinct()
+    distinct() |>
+    filter(!is.na(labels))
   return(data2)}
 
 # FUNCTION: getLevel3Table(risks)
@@ -141,7 +144,8 @@ getLevel3Table = function(risks){
          labels = level3,
          colors = sapply(level1, getColorInner)) |>
     select(ids, parents, labels, colors) |>
-    distinct()
+    distinct() |>
+    filter(!is.na(labels))
   return(data3)}
 
 # FUNCTION: getLevel4Table(risks)
@@ -160,7 +164,8 @@ getLevel4Table = function(risks){
          labels = level4,
          colors = sapply(estrisk, getColorOuter, global_min, global_max)) |>
     select(ids, parents, labels, colors) |>
-    distinct()
+    distinct() |>
+    filter(!is.na(labels))
   return(data4)}
 
 # FUNCTION: createPlotlyTable(risks)
@@ -293,5 +298,16 @@ riskroseFromCSV = function(filepath){
 #| message: False
 #| echo: False
 
-riskroseFromCSV("~/desktop/Climate Risk Rose for Airports.csv")
+
+risks = load_data("~/desktop/new risk rose.csv")
+  
+data1 = getLevel1Table(risks)
+  data2 = getLevel2Table(risks)
+  data3 = getLevel3Table(risks)
+  data4 = getLevel4Table(risks)
+
+demoRose = riskroseFromCSV("~/desktop/new risk rose.csv")
+
+demoRose
+
 ```
