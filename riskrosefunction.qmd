@@ -159,7 +159,7 @@ getLevel4Table = function(risks){
     mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
          parents = paste(level1, level2, level3, sep = " - "),
          labels = level4,
-         colors = sapply(estrisk, getColorOuter, global_min, global_max)) |>
+         colors = sapply(estrisk, getColorOuter)) |>
     select(ids, parents, labels, colors) |>
     distinct() |>
     filter(!is.na(labels))
@@ -357,9 +357,9 @@ riskroseFromCSV = function(filepath){
 #| message: False
 #| echo: False
 
-#demoRose = riskroseFromCSV("~/desktop/new risk rose.csv")
-
-#demoRose
-
+all2 = riskroseFromCSV("~/desktop/all2.csv")
+london = riskroseFromCSV("~/desktop/heathrow.csv")
+all2
+london
 
 ```
