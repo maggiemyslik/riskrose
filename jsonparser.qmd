@@ -1,0 +1,103 @@
+---
+title: "jsonfileparser"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| warning: False
+#| message: False
+#| echo: False
+
+library(tidyverse)
+library(plotly)
+library(jsonlite)
+```
+
+```{r}
+
+# FUNCTION: load_data(filepath) 
+# INPUT: file_path = file path of CSV
+# OUTPUT: risks = cleaned and read dataframe
+
+load_data = function(filepath) {
+  
+  # read in CSV, remove redundant lines, label variables with headers 
+  risks = read_csv(filepath)
+    
+  # rename variables to usable names 
+  # use format: newname = names(.)[i] when column positions are finalized 
+  risks = risks |>  
+    rename("level1" = "Tier 1",
+           "level2" = "Tier 2", 
+           "level3" = "Tier 3",
+           "level4" = "Tier 4",
+           "estrisk" = "Estimated Risk Score") 
+  
+    risks = risks[-1, ]  
+    # remove redundant row (headers)
+    risks = risks |>
+      select(level1, level2, level3, level4, estrisk) |>
+    
+    # standardize N/As and 0s in the risk rating (blank rose segments)
+    mutate(estrisk = as.numeric(estrisk),
+        estrisk = ifelse(is.na(estrisk), "blank", estrisk),
+        estrisk = ifelse(estrisk == "0", "blank", estrisk)) 
+  
+  return(risks)}
+
+# FUNCTION: getColorOuter(estrisk)
+# INPUT: estrisk = the estimated risk rating in a range from 0 to 1 OR "blank" 
+# OUTPUT: a hex code that is white for blanks and scaled on a spectrum from green to red for numeric risk ratings 
+
+getColorOuter = function(estrisk) {
+  # make blanks white 
+  if (estrisk == "blank"){
+    return("#ffffff")}
+  # convert numeric values into a scale from 0 to 1 to standardize risk level ratings 
+  else {
+    normalized_estrisk = as.numeric(estrisk) / (max((as.numeric(estrisk))))
+    # convert estrisk numeric value into standardized color system 
+    color_matrix = colorRamp(c("#D8A935", "#932a2a"))(normalized_estrisk)
+    # convert output color matrix RGB into hexcode 
+    hexcode = rgb(color_matrix[1], color_matrix[2], color_matrix[3], maxColorValue = 255)
+    return(hexcode)}}
+
+# FUNCTION: parse_data(risks)
+# INPUT: risks = the tabulated form of the risk rose data from excel
+# OUTPUT: json formatted data 
+
+parse_data = function(risks) {
+  hierarchical_risks = risks |>
+        # Group by all levels and summarize to count each unique combination
+    group_by(level1, level2, level3, level4) |>
+    select(level1, level2, level3, level4, estrisk) |>
+    mutate(color = sapply(estrisk, getColorOuter),
+           size = 1) |>
+        # Start the nesting process
+        # Nest level4 data within level3
+    select(level1, level2, level3, level4, size, color) |>
+    rename(name = level4) |>
+    nest(children = -c(level1, level2, level3)) |>
+        # Nest level3 data within level2
+    group_by(level1, level2, level3) |>
+    rename(name = level3) |>
+    nest(children = -c(level1, level2)) |>
+        # Nest level2 data within level1
+    group_by(level1, level2) |>  
+    rename(name = level2) |>
+    nest(children = -level1) |>
+    ungroup() |>
+    rename(name = level1) |>
+    list(name = "Root", children = data)
+  # Convert the hierarchical data to JSON
+  json_risks = toJSON(hierarchical_risks, pretty = TRUE, auto_unbox = TRUE)
+  # Return the JSON
+  return(json_risks)
+}
+
+risks = load_data("~/desktop/new risk rose.csv")
+json = parse_data(risks)
+writeLines(json, "risks.json")
+```
