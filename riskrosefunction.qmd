@@ -207,10 +207,10 @@ processText = function(labels, ids, colors) {
     }
     
     # Determine the depth of the current label
-    depth = length(strsplit(ids[i], "/")[[1]]) 
+    depth = length(strsplit(ids[i], "-")[[1]]) 
     
     # Determine the appropriate maxChars based on depth
-    maxChars = ifelse(depth > 3, 15, 9)
+    maxChars = ifelse(depth > 3, 20, 8)
 
     label = labels[i]
     if (nchar(label) > maxChars) {
@@ -328,7 +328,8 @@ plotlyrisks = rbind(data1, data2, data3, data4)
 plotlyrisksformatted = createLabels(plotlyrisks)
 riskrose2 = createRose(plotlyrisksformatted)
 
-riskrose2
+htmlwidgets::saveWidget(riskrose2, "alllevel2.html")
+
 ```
 
 ```{r}
@@ -338,6 +339,7 @@ riskrose2
 #| echo: False
 
 london = riskroseFromCSV("~/desktop/heathrow.csv")
-london
+htmlwidgets::saveWidget(london, "heathrow.html")
+
 
 ```
