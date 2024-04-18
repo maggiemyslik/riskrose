@@ -37,13 +37,17 @@ load_data = function(filepath) {
     rename("level1" = "Tier 1",
            "level2" = "Tier 2", 
            "level3" = "Tier 3",
-           "level4" = "Tier 4",
+           "level4" = "Tier 4 - headline",
+           "label1" = "Tier 1 - description",
+           "label2" = "Tier 2 - description",
+           "label3" = "Tier 3 - description",
+           "label4" = "Tier 4 - description",
            "estrisk" = "Estimated Risk Score") 
   
     risks = risks[-1, ]  
     # remove redundant row (headers)
     risks = risks |>
-      select(level1, level2, level3, level4, estrisk) |>
+      select(level1, level2, level3, level4, label1, label2, label3, label4, estrisk) |>
     
     # standardize N/As and 0s in the risk rating (blank rose segments)
     mutate(estrisk = as.numeric(estrisk),
@@ -59,10 +63,6 @@ load_data = function(filepath) {
 #| message: False
 #| echo: False
 
-#| label: create-plotly-sunburst-dataset
-#| warning: False
-#| message: False
-#| echo: False
 
 ### GUIDE FROM PLOTLY ###
 
@@ -79,7 +79,7 @@ load_data = function(filepath) {
 # OUTPUT: a hex code corresponding to physical vs transition risks 
 
 getColorInner = function(level1) {
-  if (level1 == "Transition Risks and Opportunities"){
+  if (level1 == "Transition"){
     return("#6D8368")}
   else {
     return("#20320C")}}
@@ -118,8 +118,9 @@ getLevel1Table = function(risks){
   mutate(ids = level1,
          parents = ' ',
          labels = level1,
+         tooltip = label1,
          colors = sapply(level1, getColorInner)) |>
-    select(ids, parents, labels, colors) |>
+    select(ids, parents, labels, colors, tooltip) |>
     distinct() |>
     filter(!is.na(labels))
   return(data1)}
@@ -133,8 +134,9 @@ getLevel2Table = function(risks){
   mutate(ids = paste(level1, level2, sep = " - "),
          parents = level1,
          labels = level2,
+         tooltip = label2,
          colors = sapply(level1, getColorInner)) |>
-    select(ids, parents, labels, colors) |>
+    select(ids, parents, labels, colors, tooltip) |>
     distinct() |>
     filter(!is.na(labels))
   return(data2)}
@@ -148,8 +150,9 @@ getLevel3Table = function(risks){
   mutate(ids = paste(level1, level2, level3, sep = " - "),
          parents = paste(level1, level2, sep = " - "),
          labels = level3,
+         tooltip = label3,
          colors = sapply(level1, getColorInner)) |>
-    select(ids, parents, labels, colors) |>
+    select(ids, parents, labels, colors, tooltip) |>
     distinct() |>
     filter(!is.na(labels))
   return(data3)}
@@ -168,8 +171,9 @@ getLevel4Table = function(risks){
     mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
          parents = paste(level1, level2, level3, sep = " - "),
          labels = level4,
+         tooltip = label4,
          colors = sapply(estrisk, getColorOuter, global_min, global_max)) |>
-    select(ids, parents, labels, colors) |>
+    select(ids, parents, labels, colors, tooltip) |>
     distinct() |>
     filter(!is.na(labels))
   return(data4)}
@@ -198,13 +202,9 @@ createPlotlyTable = function(risks) {
 # INPUTS: labels, ids, colors = specific variables within the plotlyrisks table  
 # OUTPUT: new label that is blank for the empty spaces, with line breaks every 9-characters for the inner rings, and line breaks every 15-characters for the outer rings
 
-processText = function(labels, ids, colors) {
+
+processText = function(labels, ids) {
   sapply(seq_along(labels), function(i) {
-    
-    # replace text on "blank" segments with an empty string
-    if (colors[i] == "#ffffff") {
-      return("")
-    }
     
     # Determine the depth of the current label
     depth = length(strsplit(ids[i], "-")[[1]]) 
@@ -213,6 +213,35 @@ processText = function(labels, ids, colors) {
     maxChars = ifelse(depth > 3, 20, 8)
 
     label = labels[i]
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+
+processBlockText = function(labels) {
+  sapply(seq_along(labels), function(i) {
+    
+    # replace text on "blank" segments with an empty string
+    #if (colors[i] == "#ffffff") {
+      #return("")}
+    
+    label = labels[i]
+    maxChars = 30
     if (nchar(label) > maxChars) {
       wordList = strsplit(label, " ")[[1]]
       newLabel = ""
@@ -241,11 +270,10 @@ createLabels = function(plotlyrisks){
   plotlyrisksformatted = plotlyrisks |>
     mutate(
       processedLabels = processText(
-        plotlyrisks$labels,
-        plotlyrisks$ids,
-        plotlyrisks$colors
+        plotlyrisks$labels, plotlyrisks$ids),
+      processedToolTip = processBlockText(
+        plotlyrisks$tooltip)
       )
-    )
     return(plotlyrisksformatted)}  
 
 ```
@@ -268,12 +296,10 @@ createRose = function(plotlyrisksformatted){
     labels = plotlyrisksformatted$processedLabels,
     parents = plotlyrisksformatted$parents,
     marker = list(colors = plotlyrisksformatted$colors),
-    #insidetextfont = list(color = "white"),
     domain = list(column = 1),
+    hovertemplate = paste(plotlyrisksformatted$processedToolTip, '<extra></extra>'),
     maxdepth = 5,
-    insidetextfont = list(size = 20),
-    insidetextorientation = 'radial'
-  )
+    insidetextfont = list(size = 10))
   return(riskrose)}
 ```
 
@@ -297,49 +323,14 @@ riskroseFromCSV = function(filepath){
 ```
 
 ```{r}
-#| label: testing-oldsheet
-#| warning: False
-#| message: False
-#| echo: False
-
-rose = riskroseFromCSV("~/desktop/new risk rose.csv")
-rose
-```
-
-```{r}
-#| label: testing-alllevel2rose
-#| warning: False
-#| message: False
-#| echo: False
-
-risks = load_data("~/desktop/all2.csv") 
-data1 = getLevel1Table(risks)
-data2 = getLevel2Table(risks)
-data3 = getLevel3Table(risks)
-data4 = risks |> 
-    mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
-         parents = paste(level1, level2, level3, sep = " - "),
-         labels = level4,
-         colors = "#D8A935") |>
-    select(ids, parents, labels, colors) |>
-    distinct() |>
-    filter(!is.na(labels))
-plotlyrisks = rbind(data1, data2, data3, data4)
-plotlyrisksformatted = createLabels(plotlyrisks)
-riskrose2 = createRose(plotlyrisksformatted)
-
-htmlwidgets::saveWidget(riskrose2, "alllevel2.html")
-
-```
-
-```{r}
 #| label: testing-heathrowrose
 #| warning: False
 #| message: False
 #| echo: False
 
-london = riskroseFromCSV("~/desktop/heathrow.csv")
-htmlwidgets::saveWidget(london, "heathrow.html")
+london = riskroseFromCSV("~/desktop/mostupdatedheathrow.csv")
+london
+htmlwidgets::saveWidget(london, "heathrowNEWEST.html")
 
 
 ```
