@@ -1,0 +1,357 @@
+---
+title: "heathrowReportRoses"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| warning: False
+#| message: False
+#| echo: False
+
+library(tidyverse)
+library(plotly)
+library(jsonlite)
+```
+
+```{r}
+#| label: load-and-clean-data
+#| warning: False
+#| message: False
+#| echo: False
+
+
+# FUNCTION: load_data(filepath) 
+# INPUT: file_path = file path of CSV
+# OUTPUT: risks = cleaned and read dataframe
+
+load_data = function(filepath) {
+  
+  # read in CSV, remove redundant lines, label variables with headers 
+  risks = read_csv(filepath)
+    
+  # rename variables to usable names 
+  # use format: newname = names(.)[i] when column positions are finalized 
+  risks = risks |>  
+    rename("level1" = "Tier 1",
+           "level2" = "Tier 2", 
+           "level3" = "Tier 3",
+           "level4" = "Tier 4 - headline",
+           "label1" = "Tier 1 - description",
+           "label2" = "Tier 2 - description",
+           "label3" = "Tier 3 - description",
+           "label4" = "Tier 4 - description",
+           "estrisk" = "Estimated Risk Score") 
+  
+    risks = risks[-1, ]  
+    # remove redundant row (headers)
+    risks = risks |>
+      select(level1, level2, level3, level4, label1, label2, label3, label4, estrisk) |>
+    
+    # standardize N/As and 0s in the risk rating (blank rose segments)
+    mutate(estrisk = as.numeric(estrisk),
+        estrisk = ifelse(is.na(estrisk), "blank", estrisk),
+        estrisk = ifelse(estrisk == "0", "blank", estrisk)) 
+  
+  return(risks)}
+```
+
+```{r}
+#| label: create-plotly-sunburst-dataset
+#| warning: False
+#| message: False
+#| echo: False
+
+
+### GUIDE FROM PLOTLY ###
+
+# ids: These should be unique identifiers for each sector, sub-sector, and individual component of your chart. In the case of a 4-ring chart, each id will correspond to an entry in the fourth ring, with unique concatenations of the previous levels.
+
+# labels: These will be the text labels displayed on the chart for each id.
+
+# parents: This is the id of the immediate parent level. For top-level entries, this will be blank.
+
+# Each parent must be defined before its children. The top-level parent should have no parent id (it can be an empty string)
+
+# FUNCTION: getColorInner(level1)
+# INPUT: level1 = category of risk
+# OUTPUT: a hex code corresponding to physical vs transition risks 
+
+getColorInner = function(level1) {
+  if (level1 == "Transition"){
+    return("#6D8368")}
+  else {
+    return("#20320C")}}
+
+# FUNCTION: getColorOuter(estrisk)
+# INPUT: estrisk = the estimated risk rating in a range from 0 to 1 OR "blank" 
+# OUTPUT: a hex code that is white for blanks and scaled on a spectrum from green to red for numeric risk ratings   
+
+# define global variables for range of numeric values within estimated risk column 
+
+getColorOuter = function(estrisk) {
+  estrisk = as.numeric(estrisk)
+  if (estrisk == 1){
+    return("#D8A935")}
+  if (estrisk == 2){
+    return("#d1712d")}
+  if (estrisk == 3){
+    return("#BA3535")}
+  else{return("#fff")}}
+
+# FUNCTION: getLevel1Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data1 = a plotly table with parent values and labels for risk level 1
+
+getLevel1Table = function(risks){
+  data1 = risks |> 
+  mutate(ids = level1,
+         parents = ' ',
+         labels = level1,
+         tooltip = label1,
+         colors = sapply(level1, getColorInner)) |>
+    select(ids, parents, labels, colors, tooltip) |>
+    distinct() |>
+    filter(!is.na(labels))
+  return(data1)}
+  
+# FUNCTION: getLevel2Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data2 = a plotly table with parent values and labels for risk level 2
+
+getLevel2Table = function(risks){
+  data2 = risks |> 
+  mutate(ids = paste(level1, level2, sep = " - "),
+         parents = level1,
+         labels = level2,
+         tooltip = label2,
+         colors = sapply(level1, getColorInner)) |>
+    select(ids, parents, labels, colors, tooltip) |>
+    distinct() |>
+    filter(!is.na(labels))
+  return(data2)}
+
+# FUNCTION: getLevel3Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data3 = a plotly table with parent values and labels for risk level 3
+
+getLevel3Table = function(risks){
+  data3 = risks |> 
+  mutate(ids = paste(level1, level2, level3, sep = " - "),
+         parents = paste(level1, level2, sep = " - "),
+         labels = level3,
+         tooltip = label3,
+         colors = sapply(level1, getColorInner)) |>
+    select(ids, parents, labels, colors, tooltip) |>
+    distinct() |>
+    filter(!is.na(labels))
+  return(data3)}
+
+# FUNCTION: getLevel4Table(risks)
+# INPUT: risks = cleaned data table 
+# OUTPUT: data4 = a plotly table with parent values, labels, and colors for risk level 4
+
+
+getLevel4Table = function(risks){
+  # define min and max estrisk values for the color function
+  global_min = min(as.numeric(risks$estrisk), na.rm = TRUE)
+  global_max = max(as.numeric(risks$estrisk), na.rm = TRUE)
+  # make the correctly formatted and color-coded table
+  data4 = risks |> 
+    mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
+         parents = paste(level1, level2, level3, sep = " - "),
+         labels = level4,
+         tooltip = label4,
+         colors = sapply(estrisk, getColorOuter)) |>
+    select(ids, parents, labels, colors, tooltip) |>
+    distinct() |>
+    filter(!is.na(labels))
+  return(data4)}
+
+# FUNCTION: createPlotlyTable(risks)
+# INPUT: risks = cleaned data table
+# OUTPUT: plotlyrisks = a combined plotly table that includes all risk levels with colors
+
+createPlotlyTable = function(risks) {
+  data1 = getLevel1Table(risks)
+  data2 = getLevel2Table(risks)
+  data3 = getLevel3Table(risks)
+  data4 = getLevel4Table(risks)
+
+  plotlyrisks = rbind(data1, data2, data3, data4)
+  return(plotlyrisks)}
+```
+
+```{r}
+#| label: text-formatting
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: processText(labels, ids, colors)
+# INPUTS: labels, ids, colors = specific variables within the plotlyrisks table  
+# OUTPUT: new label that is blank for the empty spaces, with line breaks every 9-characters for the inner rings, and line breaks every 15-characters for the outer rings
+
+
+processText = function(labels, ids) {
+  sapply(seq_along(labels), function(i) {
+    
+    # Determine the depth of the current label
+    depth = length(strsplit(ids[i], "-")[[1]]) 
+    
+    # Determine the appropriate maxChars based on depth
+    maxChars = ifelse(depth > 3, 20, 8)
+
+    label = labels[i]
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+
+processBlockText = function(labels) {
+  sapply(seq_along(labels), function(i) {
+    
+    # replace text on "blank" segments with an empty string
+    #if (colors[i] == "#ffffff") {
+      #return("")}
+    
+    label = labels[i]
+    maxChars = 30
+    if (nchar(label) > maxChars) {
+      wordList = strsplit(label, " ")[[1]]
+      newLabel = ""
+      currentLineLength = 0
+      for (word in wordList) {
+        if (nchar(word) + currentLineLength > maxChars) {
+          newLabel = paste(newLabel, "\n", sep = "")
+          currentLineLength = 0
+        }
+        newLabel = paste(newLabel, word, sep = " ")
+        currentLineLength = currentLineLength + nchar(word) + 1
+      }
+      return(trimws(newLabel))
+    } else {
+      return(label)
+    }
+  })
+}
+
+# FUNCTION: createLabels(plotlyrisks)
+# INPUTS: plotlyrisks =  table in the plotly format   
+# OUTPUT: plotlyrisksformatted =  plotlyrisks with new column "processed labels" that includes text breaks and empty strings in the correct places
+
+createLabels = function(plotlyrisks){
+  # Apply the processText function to the labels, ids, and colors of plotlyrisks
+  plotlyrisksformatted = plotlyrisks |>
+    mutate(
+      processedLabels = processText(
+        plotlyrisks$labels, plotlyrisks$ids),
+      processedToolTip = processBlockText(
+        plotlyrisks$tooltip)
+      )
+    return(plotlyrisksformatted)}  
+
+```
+
+```{r}
+#| label: create-riskrose
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: createRose(plotlyrisksformatted)
+# INPUTS: plotlyrisksformatted =  plotly formatted table with processed labels column   
+# OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
+
+createRose = function(plotlyrisksformatted){
+  riskrose = plot_ly()
+  riskrose = riskrose |> add_trace(
+    type = 'sunburst',
+    ids = plotlyrisksformatted$ids,
+    labels = plotlyrisksformatted$processedLabels,
+    parents = plotlyrisksformatted$parents,
+    marker = list(colors = plotlyrisksformatted$colors),
+    domain = list(column = 1),
+    hovertemplate = paste(plotlyrisksformatted$processedToolTip, '<extra></extra>'),
+    maxdepth = 5,
+    insidetextfont = list(size = 10))
+  return(riskrose)}
+```
+
+```{r}
+#| label: combine-functions
+#| warning: False
+#| message: False
+#| echo: False
+
+# FUNCTION: riskroseFromCSV(filepath)
+# INPUTS: filepath = file path of CSV containing risk data
+# OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
+
+riskroseFromCSV = function(filepath){
+  risks = load_data(filepath) 
+  plotlyrisks = createPlotlyTable(risks)
+  plotlyrisksformatted = createLabels(plotlyrisks)
+  riskrose = createRose(plotlyrisksformatted)
+  return(riskrose)}
+
+```
+
+```{r}
+#| label: testing-heathrowrose
+#| warning: False
+#| message: False
+#| echo: False
+
+h7to9heat = riskroseFromCSV("~/desktop/h7to9heat.csv")
+htmlwidgets::saveWidget(h7to9heat, "h7to9heat.html")
+
+h7to9heatS = riskroseFromCSV("~/desktop/h7to9heatS.csv")
+htmlwidgets::saveWidget(h7to9heatS, "h7to9heatS.html")
+
+h10heat = riskroseFromCSV("~/desktop/h10heat.csv")
+htmlwidgets::saveWidget(h10heat, "h10heat.html")
+
+h10heatS = riskroseFromCSV("~/desktop/h10heatS.csv")
+htmlwidgets::saveWidget(h10heatS, "h10heatS.html")
+
+h7to10snow = riskroseFromCSV("~/desktop/h7to10snow.csv")
+htmlwidgets::saveWidget(h7to10snow, "h7to10snow.html")
+
+h7to10snowS = riskroseFromCSV("~/desktop/h7to10snowS.csv")
+htmlwidgets::saveWidget(h7to10snowS, "h7to10snowS.html")
+
+h7to8rain = riskroseFromCSV("~/desktop/h7to8rain.csv")
+htmlwidgets::saveWidget(h7to8rain, "h7to8rain.html")
+
+h7to8rainS = riskroseFromCSV("~/desktop/h7to8rainS.csv")
+htmlwidgets::saveWidget(h7to8rainS, "h7to8rainS.html")
+
+h9to10rain = riskroseFromCSV("~/desktop/h9to10rain.csv")
+htmlwidgets::saveWidget(h9to10rain, "h9to10rain.html")
+
+h9to10rainS = riskroseFromCSV("~/desktop/h9to10rainS.csv")
+htmlwidgets::saveWidget(h9to10rainS, "h9to10rainS.html")
+
+h7to9wind = riskroseFromCSV("~/desktop/h7to9wind.csv")
+htmlwidgets::saveWidget(h7to9wind, "h7to9wind.html")
+
+h7to9windS = riskroseFromCSV("~/desktop/h7to9windS.csv")
+htmlwidgets::saveWidget(h7to9windS, "h7to9windS.html")
+```
