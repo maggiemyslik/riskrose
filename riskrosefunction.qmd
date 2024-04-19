@@ -43,9 +43,11 @@ load_data = function(filepath) {
            "label3" = "Tier 3 - description",
            "label4" = "Tier 4 - description",
            "estrisk" = "Estimated Risk Score") 
-  
-    risks = risks[-1, ]  
+    
     # remove redundant row (headers)
+    risks = risks[-1, ]  
+    
+    # remove redundant columns
     risks = risks |>
       select(level1, level2, level3, level4, label1, label2, label3, label4, estrisk) |>
     
@@ -78,31 +80,35 @@ load_data = function(filepath) {
 # INPUT: level1 = category of risk
 # OUTPUT: a hex code corresponding to physical vs transition risks 
 
-getColorInner = function(level1) {
-  if (level1 == "Transition"){
+getColorInner <- function(level1) {
+  if (is.na(level1)) {
     return("#6D8368")}
-  else {
+  if (level1 == "Transition") {
+    return("#6D8368") 
+  } else {
     return("#20320C")}}
 
 # FUNCTION: getColorOuter(estrisk)
-# INPUT: estrisk = the estimated risk rating in a range from 0 to 1 OR "blank" 
+# INPUT: estrisk = the estimated risk rating in a range from 0 to 1 OR "blank", global min and max that are to be defined when the function is applied 
 # OUTPUT: a hex code that is white for blanks and scaled on a spectrum from green to red for numeric risk ratings   
-
-# define global variables for range of numeric values within estimated risk column 
 
 getColorOuter = function(estrisk, global_min, global_max) {
   
-  # make blanks white 
+  # make blanks white + any N/As and/or extras 
+  
   if (estrisk == "blank"){
     return("#ffffff")}
+  estrisk = as.numeric(estrisk)
+  if (is.na(estrisk))
+  {return("#ffffff")}
   
-  # convert numeric values into a scale from 0 to 1 to standardize risk level ratings 
+  
   else {
+    # convert numeric values into a scale from 0 to 1 to standardize risk level ratings 
     normalized_estrisk = (as.numeric(estrisk) - global_min) / (global_max - global_min)
       
     # convert estrisk numeric value into standardized color system 
-    
-    color_matrix = colorRamp(c("#D8A935","#BA3535"))(normalized_estrisk)
+    color_matrix = colorRamp(c("#90b987", "#D8A935","#BA3535"))(normalized_estrisk)
     
     # convert output color matrix RGB into hexcode 
     hexcode = rgb(color_matrix[1], color_matrix[2], color_matrix[3], maxColorValue = 255)
@@ -183,12 +189,16 @@ getLevel4Table = function(risks){
 # OUTPUT: plotlyrisks = a combined plotly table that includes all risk levels with colors
 
 createPlotlyTable = function(risks) {
+  # call each table function
   data1 = getLevel1Table(risks)
   data2 = getLevel2Table(risks)
   data3 = getLevel3Table(risks)
   data4 = getLevel4Table(risks)
 
-  plotlyrisks = rbind(data1, data2, data3, data4)
+  # combine and debug for duplicate IDs (create plotly error)
+  plotlyrisks = rbind(data1, data2, data3, data4) |>
+    distinct(ids, .keep_all = TRUE)
+  
   return(plotlyrisks)}
 ```
 
@@ -210,7 +220,7 @@ processText = function(labels, ids) {
     depth = length(strsplit(ids[i], "-")[[1]]) 
     
     # Determine the appropriate maxChars based on depth
-    maxChars = ifelse(depth > 3, 20, 8)
+    maxChars = ifelse(depth > 3, 12, 8)
 
     label = labels[i]
     if (nchar(label) > maxChars) {
@@ -313,24 +323,11 @@ createRose = function(plotlyrisksformatted){
 # INPUTS: filepath = file path of CSV containing risk data
 # OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
 
-riskroseFromCSV = function(filepath){
+riskrose = function(filepath){
   risks = load_data(filepath) 
   plotlyrisks = createPlotlyTable(risks)
   plotlyrisksformatted = createLabels(plotlyrisks)
   riskrose = createRose(plotlyrisksformatted)
   return(riskrose)}
-
-```
-
-```{r}
-#| label: testing-heathrowrose
-#| warning: False
-#| message: False
-#| echo: False
-
-london = riskroseFromCSV("~/desktop/mostupdatedheathrow.csv")
-london
-htmlwidgets::saveWidget(london, "heathrowNEWEST.html")
-
 
 ```
