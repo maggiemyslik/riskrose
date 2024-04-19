@@ -63,7 +63,6 @@ load_data = function(filepath) {
 #| message: False
 #| echo: False
 
-
 ### GUIDE FROM PLOTLY ###
 
 # ids: These should be unique identifiers for each sector, sub-sector, and individual component of your chart. In the case of a 4-ring chart, each id will correspond to an entry in the fourth ring, with unique concatenations of the previous levels.
@@ -325,7 +324,7 @@ riskroseFromCSV = function(filepath){
 ```
 
 ```{r}
-#| label: testing-heathrowrose
+#| label: create-roses
 #| warning: False
 #| message: False
 #| echo: False
