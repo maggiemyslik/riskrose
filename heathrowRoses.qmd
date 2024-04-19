@@ -78,10 +78,12 @@ load_data = function(filepath) {
 # INPUT: level1 = category of risk
 # OUTPUT: a hex code corresponding to physical vs transition risks 
 
-getColorInner = function(level1) {
-  if (level1 == "Transition"){
+getColorInner <- function(level1) {
+  if (is.na(level1)) {
     return("#6D8368")}
-  else {
+  if (level1 == "Transition") {
+    return("#6D8368") 
+  } else {
     return("#20320C")}}
 
 # FUNCTION: getColorOuter(estrisk)
@@ -92,13 +94,19 @@ getColorInner = function(level1) {
 
 getColorOuter = function(estrisk) {
   estrisk = as.numeric(estrisk)
-  if (estrisk == 1){
-    return("#D8A935")}
-  if (estrisk == 2){
-    return("#d1712d")}
-  if (estrisk == 3){
-    return("#BA3535")}
-  else{return("#fff")}}
+  if (is.na(estrisk))
+  {return("#ffffff")}
+  
+  estrisk <- as.numeric(estrisk)
+  
+  if (estrisk == 1) {
+    return("#90b987")
+  } else if (estrisk == 2) {
+    return("#D8A935")
+  } else if (estrisk == 3) {
+    return("#BA3535")
+  } else {
+    return("#ffffff")}}
 
 # FUNCTION: getLevel1Table(risks)
 # INPUT: risks = cleaned data table 
@@ -154,9 +162,6 @@ getLevel3Table = function(risks){
 
 
 getLevel4Table = function(risks){
-  # define min and max estrisk values for the color function
-  global_min = min(as.numeric(risks$estrisk), na.rm = TRUE)
-  global_max = max(as.numeric(risks$estrisk), na.rm = TRUE)
   # make the correctly formatted and color-coded table
   data4 = risks |> 
     mutate(ids = paste(level1, level2, level3, level4, sep = " - "),
@@ -179,7 +184,9 @@ createPlotlyTable = function(risks) {
   data3 = getLevel3Table(risks)
   data4 = getLevel4Table(risks)
 
-  plotlyrisks = rbind(data1, data2, data3, data4)
+  plotlyrisks = rbind(data1, data2, data3, data4) |>
+    distinct(ids, .keep_all = TRUE)
+  
   return(plotlyrisks)}
 ```
 
@@ -201,7 +208,7 @@ processText = function(labels, ids) {
     depth = length(strsplit(ids[i], "-")[[1]]) 
     
     # Determine the appropriate maxChars based on depth
-    maxChars = ifelse(depth > 3, 20, 8)
+    maxChars = ifelse(depth > 3, 12, 8)
 
     label = labels[i]
     if (nchar(label) > maxChars) {
@@ -280,6 +287,10 @@ createLabels = function(plotlyrisks){
 # OUTPUT: riskrose =  formatted sunburst chart displaying levels of risks 
 
 createRose = function(plotlyrisksformatted){
+  
+  plotlyrisksformatted <- plotlyrisksformatted |>
+    filter(!is.na(ids) & !is.na(parents) & !is.na(labels) & !is.na(colors) & !is.na(processedLabels))
+  
   riskrose = plot_ly()
   riskrose = riskrose |> add_trace(
     type = 'sunburst',
@@ -319,39 +330,103 @@ riskroseFromCSV = function(filepath){
 #| message: False
 #| echo: False
 
-h7to9heat = riskroseFromCSV("~/desktop/h7to9heat.csv")
-htmlwidgets::saveWidget(h7to9heat, "h7to9heat.html")
+heathrow = riskroseFromCSV("~/desktop/heathrow.csv")
+htmlwidgets::saveWidget(heathrow, "heathrow.1.html")
+heathrow 
 
-h7to9heatS = riskroseFromCSV("~/desktop/h7to9heatS.csv")
-htmlwidgets::saveWidget(h7to9heatS, "h7to9heatS.html")
+h7to8heat = riskroseFromCSV("~/desktop/h7to8heat.csv")
+htmlwidgets::saveWidget(h7to8heat, "h7to8heat.1.html")
+h7to8heat
+
+h7to8heatS = riskroseFromCSV("~/desktop/h7to8heatS.csv")
+htmlwidgets::saveWidget(h7to8heatS, "h7to8heatS.1.html")
+h7to8heatS
+
+h9heat = riskroseFromCSV("~/desktop/h9heat.csv")
+htmlwidgets::saveWidget(h9heat, "h9heat.1.html")
+h9heat
+
+h9heatS = riskroseFromCSV("~/desktop/h9heatS.csv")
+htmlwidgets::saveWidget(h9heatS, "h9heatS.1.html")
+h9heatS
 
 h10heat = riskroseFromCSV("~/desktop/h10heat.csv")
-htmlwidgets::saveWidget(h10heat, "h10heat.html")
+htmlwidgets::saveWidget(h10heat, "h10heat.1.html")
+h10heat
 
 h10heatS = riskroseFromCSV("~/desktop/h10heatS.csv")
-htmlwidgets::saveWidget(h10heatS, "h10heatS.html")
+htmlwidgets::saveWidget(h10heatS, "h10heatS.1.html")
+h10heatS
 
-h7to10snow = riskroseFromCSV("~/desktop/h7to10snow.csv")
-htmlwidgets::saveWidget(h7to10snow, "h7to10snow.html")
+h7to8wind = riskroseFromCSV("~/desktop/h7to8wind.csv")
+htmlwidgets::saveWidget(h7to8wind, "h7to8wind.1.html")
+h7to8wind
 
-h7to10snowS = riskroseFromCSV("~/desktop/h7to10snowS.csv")
-htmlwidgets::saveWidget(h7to10snowS, "h7to10snowS.html")
+h7to8windS = riskroseFromCSV("~/desktop/h7to8windS.csv")
+htmlwidgets::saveWidget(h7to8windS, "h7to8windS.1.html")
+h7to8windS
+
+h9wind = riskroseFromCSV("~/desktop/h9wind.csv")
+htmlwidgets::saveWidget(h9wind, "h9wind.1.html")
+h9wind
+
+h9windS = riskroseFromCSV("~/desktop/h9windS.csv")
+htmlwidgets::saveWidget(h9windS, "h9windS.1.html")
+h9windS
+
+h10wind = riskroseFromCSV("~/desktop/h10wind.csv")
+htmlwidgets::saveWidget(h10wind, "h10wind.1.html")
+h10wind
+
+h10windS = riskroseFromCSV("~/desktop/h10windS.csv")
+htmlwidgets::saveWidget(h10windS, "h10windS.1.html")
+h10windS
+
+h7to8snow = riskroseFromCSV("~/desktop/h7to8snow.csv")
+htmlwidgets::saveWidget(h7to8snow, "h7to8snow.1.html")
+h7to8snow
+
+h7to8snowS = riskroseFromCSV("~/desktop/h7to8snowS.csv")
+htmlwidgets::saveWidget(h7to8snowS, "h7to8snowS.1.html")
+h7to8snowS
+
+h9snow = riskroseFromCSV("~/desktop/h9snow.csv")
+htmlwidgets::saveWidget(h9snow, "h9snow.1.html")
+h9snow
+
+h9snowS = riskroseFromCSV("~/desktop/h9snowS.csv")
+htmlwidgets::saveWidget(h9snowS, "h9snowS.1.html")
+h9snowS
+
+h10snow = riskroseFromCSV("~/desktop/h10snow.csv")
+htmlwidgets::saveWidget(h10snow, "h10snow.1.html")
+h10snow
+
+h10snowS = riskroseFromCSV("~/desktop/h10snowS.csv")
+htmlwidgets::saveWidget(h10snowS, "h10snowS.1.html")
+h10snowS
 
 h7to8rain = riskroseFromCSV("~/desktop/h7to8rain.csv")
-htmlwidgets::saveWidget(h7to8rain, "h7to8rain.html")
+htmlwidgets::saveWidget(h7to8rain, "h7to8rain.1.html")
+h7to8rain
 
 h7to8rainS = riskroseFromCSV("~/desktop/h7to8rainS.csv")
-htmlwidgets::saveWidget(h7to8rainS, "h7to8rainS.html")
+htmlwidgets::saveWidget(h7to8rainS, "h7to8rainS.1.html")
+h7to8rainS
 
-h9to10rain = riskroseFromCSV("~/desktop/h9to10rain.csv")
-htmlwidgets::saveWidget(h9to10rain, "h9to10rain.html")
+h9rain = riskroseFromCSV("~/desktop/h9rain.csv")
+htmlwidgets::saveWidget(h9rain, "h9rain.1.html")
+h9rain
 
-h9to10rainS = riskroseFromCSV("~/desktop/h9to10rainS.csv")
-htmlwidgets::saveWidget(h9to10rainS, "h9to10rainS.html")
+h9rainS = riskroseFromCSV("~/desktop/h9rainS.csv")
+htmlwidgets::saveWidget(h9rainS, "h9rainS.1.html")
+h9rainS
 
-h7to9wind = riskroseFromCSV("~/desktop/h7to9wind.csv")
-htmlwidgets::saveWidget(h7to9wind, "h7to9wind.html")
+h10rain = riskroseFromCSV("~/desktop/h10rain.csv")
+htmlwidgets::saveWidget(h10rain, "h10rain.1.html")
+h10rain
 
-h7to9windS = riskroseFromCSV("~/desktop/h7to9windS.csv")
-htmlwidgets::saveWidget(h7to9windS, "h7to9windS.html")
+h10rainS = riskroseFromCSV("~/desktop/h10rainS.csv")
+htmlwidgets::saveWidget(h10rainS, "h10rainS.1.html")
+h10rainS
 ```
