@@ -220,7 +220,7 @@ processText = function(labels, ids) {
     depth = length(strsplit(ids[i], "-")[[1]]) 
     
     # Determine the appropriate maxChars based on depth
-    maxChars = ifelse(depth > 3, 12, 8)
+    maxChars = ifelse(depth > 3, 25, 8)
 
     label = labels[i]
     if (nchar(label) > maxChars) {
@@ -330,4 +330,10 @@ riskrose = function(filepath){
   riskrose = createRose(plotlyrisksformatted)
   return(riskrose)}
 
+```
+
+```{r}
+heathrow = riskroseFromCSV("~/desktop/heathrow.csv")
+htmlwidgets::saveWidget(heathrow, "heathrow.2.html")
+heathrow 
 ```
